@@ -72,6 +72,8 @@ header {
   padding: 7px 14px; font: 600 .9rem "Barlow", sans-serif; cursor: pointer;
 }
 .compartir + .reloj { margin-left: 0; }
+.instalar { background: #E8A33D; color: #15212C; }
+.instalar + .compartir { margin-left: 8px; }
 .aviso {
   position: fixed; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%);
   background: var(--barra); color: var(--barra-texto); padding: 9px 16px; border-radius: 8px; font-size: .9rem;
@@ -163,6 +165,7 @@ button:focus-visible, a:focus-visible { outline: 3px solid var(--enfoque); outli
     <button type="button" data-vista="tres" aria-pressed="true">Las tres</button>
     <button type="button" data-vista="una" aria-pressed="false">Una a la vez</button>
   </div>
+  <button type="button" id="instalar" class="compartir instalar" hidden>Instalar app</button>
   <button type="button" id="compartir" class="compartir">Compartir</button>
   <div class="reloj"><span id="hora">--:--</span><small>hora del Istmo</small></div>
 </header>
@@ -274,6 +277,27 @@ document.getElementById("compartir").addEventListener("click", async () => {
   try { await navigator.clipboard.writeText(ENLACE); aviso("Enlace copiado: " + ENLACE); }
   catch (e) { prompt("Copia este enlace:", ENLACE); }
 });
+
+// Botón "Instalar app": aparece cuando el navegador permite instalar la página
+let pedidoInstalar = null;
+const btnInstalar = document.getElementById("instalar");
+window.addEventListener("beforeinstallprompt", e => {
+  e.preventDefault(); pedidoInstalar = e; btnInstalar.hidden = false;
+});
+btnInstalar.addEventListener("click", async () => {
+  if (!pedidoInstalar) return;
+  pedidoInstalar.prompt();
+  await pedidoInstalar.userChoice.catch(() => {});
+  pedidoInstalar = null; btnInstalar.hidden = true;
+});
+window.addEventListener("appinstalled", () => { btnInstalar.hidden = true; aviso("App instalada"); });
+// En iPhone no existe ese aviso: se instala desde Compartir > Agregar a inicio
+const esIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+const yaInstalada = window.matchMedia("(display-mode: standalone)").matches || navigator.standalone;
+if (esIOS && !yaInstalada) {
+  btnInstalar.hidden = false;
+  btnInstalar.onclick = () => aviso("En iPhone: botón Compartir de Safari → Agregar a inicio");
+}
 
 // Permite instalar la página como app
 if ("serviceWorker" in navigator) {
