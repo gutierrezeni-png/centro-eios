@@ -4,6 +4,21 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Centro meteorológico · E.I.O. Salina Cruz</title>
+<meta name="description" content="Pronóstico local, presas y ríos, y mapas de lluvia y viento de Guerrero a Chiapas.">
+<meta name="theme-color" content="#0E2A44">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-title" content="Pronóstico EIOS">
+<!-- Vista previa al compartir el enlace por WhatsApp, correo, etc. -->
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://gutierrezeni-png.github.io/centro-eios/">
+<meta property="og:title" content="Pronóstico EIOS · Centro meteorológico E.I.O. Salina Cruz">
+<meta property="og:description" content="Pronóstico local, presas y ríos, y mapas de lluvia y viento de Guerrero a Chiapas.">
+<meta property="og:image" content="https://gutierrezeni-png.github.io/centro-eios/vista-previa.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
@@ -52,6 +67,16 @@ header {
 .marca p { margin: 2px 0 0; font-size: .85rem; opacity: .75; }
 .reloj { margin-left: auto; text-align: right; font: 600 1.15rem/1.1 "Barlow Condensed", sans-serif; }
 .reloj small { display: block; font: 400 .78rem "Barlow", sans-serif; opacity: .7; }
+.compartir {
+  margin-left: auto; background: var(--pronostico); color: #fff; border: 0; border-radius: 8px;
+  padding: 7px 14px; font: 600 .9rem "Barlow", sans-serif; cursor: pointer;
+}
+.compartir + .reloj { margin-left: 0; }
+.aviso {
+  position: fixed; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%);
+  background: var(--barra); color: var(--barra-texto); padding: 9px 16px; border-radius: 8px; font-size: .9rem;
+  box-shadow: 0 4px 14px rgba(0,0,0,.3); z-index: 10;
+}
 .vista { display: flex; border: 1px solid rgba(255,255,255,.28); border-radius: 8px; overflow: hidden; }
 .vista button {
   background: transparent; color: var(--barra-texto); border: 0; padding: 7px 14px;
@@ -116,6 +141,7 @@ button:focus-visible, a:focus-visible { outline: 3px solid var(--enfoque); outli
   .marca h1 { font-size: 1.1rem; }
   .reloj { font-size: 1rem; }
   .reloj small { display: none; }
+  .compartir { padding: 6px 10px; font-size: .85rem; }
   nav.pestanas .largo { display: none; }
   .marca p { display: none; }
   .cabeza p { display: none; }
@@ -137,6 +163,7 @@ button:focus-visible, a:focus-visible { outline: 3px solid var(--enfoque); outli
     <button type="button" data-vista="tres" aria-pressed="true">Las tres</button>
     <button type="button" data-vista="una" aria-pressed="false">Una a la vez</button>
   </div>
+  <button type="button" id="compartir" class="compartir">Compartir</button>
   <div class="reloj"><span id="hora">--:--</span><small>hora del Istmo</small></div>
 </header>
 
@@ -228,6 +255,30 @@ document.querySelectorAll("nav.pestanas button").forEach(b => b.addEventListener
 
 ponerVista(leer("centro_vista") || "tres");
 ponerApp(leer("centro_app") || "pronostico");
+
+// Compartir: en el celular abre el menú de compartir (WhatsApp, correo…);
+// en la PC copia el enlace.
+const ENLACE = "https://gutierrezeni-png.github.io/centro-eios/";
+function aviso(texto) {
+  const a = document.createElement("div"); a.className = "aviso"; a.textContent = texto;
+  document.body.appendChild(a); setTimeout(() => a.remove(), 3000);
+}
+document.getElementById("compartir").addEventListener("click", async () => {
+  const datos = { title: "Centro meteorológico E.I.O. Salina Cruz",
+                  text: "Pronóstico local, presas y ríos, y mapas de lluvia y viento de Guerrero a Chiapas:",
+                  url: ENLACE };
+  if (navigator.share) {
+    try { await navigator.share(datos); } catch (e) {}
+    return;
+  }
+  try { await navigator.clipboard.writeText(ENLACE); aviso("Enlace copiado: " + ENLACE); }
+  catch (e) { prompt("Copia este enlace:", ENLACE); }
+});
+
+// Permite instalar la página como app
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("sw.js").catch(() => {});
+}
 
 // Reloj en hora del Istmo
 function tic() { document.getElementById("hora").textContent = horaLocal(new Date()); }
