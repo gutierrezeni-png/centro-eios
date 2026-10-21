@@ -1,4 +1,5 @@
 {
+  "id": "./",
   "name": "Pronóstico EIOS · E.I.O. Salina Cruz",
   "short_name": "Pronóstico EIOS",
   "description": "Pronóstico local, presas y ríos, y mapas de lluvia y viento de Guerrero a Chiapas.",
@@ -27,5 +28,6 @@
       "type": "image/png",
       "purpose": "maskable"
     }
-  ]
+  ],
+  "prefer_related_applications": false
 }
