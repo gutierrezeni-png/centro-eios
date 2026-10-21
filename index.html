@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Centro meteorológico · E.I.O. Salina Cruz</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* Paleta tomada de las propias apps: azul marino de la Armada, turquesa del pronóstico,
+   verde agua de las presas y ámbar de los sistemas oceánicos. */
+:root {
+  --fondo: #E9EFF3;
+  --barra: #0E2A44;
+  --barra-texto: #F2F6F9;
+  --panel: #FFFFFF;
+  --texto: #15212C;
+  --tenue: #5A6B79;
+  --linea: #CDD8E0;
+  --pronostico: #2A9D96;
+  --presas: #2F7D5B;
+  --mapas: #B5722A;
+  --enfoque: #2A9D96;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --fondo: #0C141B; --barra: #08192A; --panel: #121D27; --texto: #E3EAF0;
+    --tenue: #93A4B3; --linea: #253545; --pronostico: #4CC3BB; --presas: #5BB58C;
+    --mapas: #E0A15A; --enfoque: #4CC3BB; color-scheme: dark;
+  }
+}
+:root { box-sizing: border-box; padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+*, *::before, *::after { box-sizing: inherit; }
+html, body { height: 100%; margin: 0; }
+body {
+  background: var(--fondo); color: var(--texto);
+  font: 15px/1.4 "Barlow", "Segoe UI", system-ui, sans-serif;
+  display: flex; flex-direction: column;
+}
+
+/* ---- barra superior ---- */
+header {
+  background: var(--barra); color: var(--barra-texto);
+  display: flex; align-items: center; gap: 18px; flex-wrap: wrap;
+  padding: 10px 18px;
+}
+.marca h1 {
+  margin: 0; font: 700 1.45rem/1.05 "Barlow Condensed", "Arial Narrow", sans-serif; letter-spacing: .01em;
+}
+.marca p { margin: 2px 0 0; font-size: .85rem; opacity: .75; }
+.reloj { margin-left: auto; text-align: right; font: 600 1.15rem/1.1 "Barlow Condensed", sans-serif; }
+.reloj small { display: block; font: 400 .78rem "Barlow", sans-serif; opacity: .7; }
+.vista { display: flex; border: 1px solid rgba(255,255,255,.28); border-radius: 8px; overflow: hidden; }
+.vista button {
+  background: transparent; color: var(--barra-texto); border: 0; padding: 7px 14px;
+  font: 600 .9rem "Barlow", sans-serif; cursor: pointer;
+}
+.vista button[aria-pressed="true"] { background: rgba(255,255,255,.16); }
+
+/* ---- pestañas (vista de una en una) ---- */
+nav.pestanas { display: none; gap: 6px; padding: 10px 14px 0; }
+nav.pestanas button {
+  flex: 1; border: 1px solid var(--linea); border-bottom: 0; background: var(--panel); color: var(--tenue);
+  padding: 9px 8px 8px; border-radius: 10px 10px 0 0; font: 600 .95rem "Barlow", sans-serif; cursor: pointer;
+  border-top: 4px solid transparent;
+}
+nav.pestanas button[aria-selected="true"] { color: var(--texto); border-top-color: var(--acento); }
+nav.pestanas button[data-app="pronostico"] { --acento: var(--pronostico); }
+nav.pestanas button[data-app="presas"] { --acento: var(--presas); }
+nav.pestanas button[data-app="mapas"] { --acento: var(--mapas); }
+
+/* ---- paneles ---- */
+main { flex: 1; min-height: 0; display: grid; gap: 12px; padding: 12px 14px 14px; }
+body[data-vista="tres"] main { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+body[data-vista="una"] main { grid-template-columns: 1fr; padding-top: 0; }
+body[data-vista="una"] nav.pestanas { display: flex; }
+body[data-vista="una"] .app:not(.activa) { display: none; }
+body[data-vista="una"] .app { border-top-left-radius: 0; border-top-right-radius: 0; }
+
+.app {
+  --acento: var(--pronostico);
+  background: var(--panel); border: 1px solid var(--linea); border-radius: 12px;
+  display: flex; flex-direction: column; min-height: 0; overflow: hidden;
+}
+.app[data-app="presas"] { --acento: var(--presas); }
+.app[data-app="mapas"] { --acento: var(--mapas); }
+.app > .cabeza {
+  display: flex; align-items: center; gap: 10px; padding: 9px 12px;
+  border-top: 5px solid var(--acento); border-bottom: 1px solid var(--linea);
+}
+.cabeza h2 { margin: 0; font: 700 1.2rem/1.1 "Barlow Condensed", sans-serif; }
+.cabeza p { margin: 1px 0 0; font-size: .82rem; color: var(--tenue); }
+.cabeza .acciones { margin-left: auto; display: flex; gap: 6px; flex-shrink: 0; }
+.cabeza a, .cabeza button {
+  border: 1px solid var(--linea); background: transparent; color: var(--texto); text-decoration: none;
+  padding: 5px 10px; border-radius: 7px; font: 500 .85rem "Barlow", sans-serif; cursor: pointer; white-space: nowrap;
+}
+.cabeza a:hover, .cabeza button:hover { border-color: var(--acento); }
+.app iframe { flex: 1; width: 100%; min-height: 0; border: 0; background: #fff; }
+.app .estado { font-size: .78rem; color: var(--tenue); padding: 5px 12px; border-top: 1px solid var(--linea); }
+
+button:focus-visible, a:focus-visible { outline: 3px solid var(--enfoque); outline-offset: 2px; }
+
+/* En pantallas angostas siempre se ve una app a la vez (el selector de vista se oculta) */
+@media (max-width: 1100px) {
+  .vista { display: none; }
+  body[data-vista] main { grid-template-columns: 1fr; padding-top: 0; }
+  body[data-vista] nav.pestanas { display: flex; }
+  body[data-vista] .app:not(.activa) { display: none; }
+  body[data-vista] .app { border-top-left-radius: 0; border-top-right-radius: 0; }
+}
+@media (max-width: 560px) {
+  header { padding: 8px 12px; gap: 10px; }
+  .marca h1 { font-size: 1.1rem; }
+  .reloj { font-size: 1rem; }
+  .reloj small { display: none; }
+  nav.pestanas .largo { display: none; }
+  .marca p { display: none; }
+  .cabeza p { display: none; }
+  .cabeza a.abrir { display: none; }
+  main { padding: 0 8px 8px; }
+  nav.pestanas { padding: 8px 8px 0; }
+  nav.pestanas button { font-size: .88rem; padding: 8px 4px 7px; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body data-vista="tres">
+<header>
+  <div class="marca">
+    <h1>Centro meteorológico E.I.O. Salina Cruz</h1>
+    <p>Pronóstico local, presas y ríos, y sistemas oceánicos de Guerrero a Chiapas</p>
+  </div>
+  <div class="vista" role="group" aria-label="Forma de ver las apps">
+    <button type="button" data-vista="tres" aria-pressed="true">Las tres</button>
+    <button type="button" data-vista="una" aria-pressed="false">Una a la vez</button>
+  </div>
+  <div class="reloj"><span id="hora">--:--</span><small>hora del Istmo</small></div>
+</header>
+
+<nav class="pestanas" role="tablist" aria-label="Apps">
+  <button type="button" role="tab" data-app="pronostico" aria-selected="true">Pronóstico</button>
+  <button type="button" role="tab" data-app="presas" aria-selected="false">Presas y ríos</button>
+  <button type="button" role="tab" data-app="mapas" aria-selected="false">Mapas<span class="largo"> de lluvia y viento</span></button>
+</nav>
+
+<main>
+  <section class="app activa" data-app="pronostico" aria-label="Pronóstico local">
+    <div class="cabeza">
+      <div><h2>Pronóstico local</h2><p>Salina Cruz, San Dionisio y Capitanía, por hora a 72 h</p></div>
+      <div class="acciones">
+        <button type="button" class="recargar">Recargar</button>
+        <a class="abrir" target="_blank" rel="noopener">Abrir completa</a>
+      </div>
+    </div>
+    <iframe title="Pronóstico local" loading="lazy" data-src="https://gutierrezeni-png.github.io/panel-presas-semar/pronostico/"></iframe>
+    <div class="estado"></div>
+  </section>
+
+  <section class="app" data-app="presas" aria-label="Presas y ríos">
+    <div class="cabeza">
+      <div><h2>Presas y ríos</h2><p>Nivel de presas de Guerrero, Oaxaca y Chiapas (CONAGUA)</p></div>
+      <div class="acciones">
+        <button type="button" class="recargar">Recargar</button>
+        <a class="abrir" target="_blank" rel="noopener">Abrir completa</a>
+      </div>
+    </div>
+    <iframe title="Presas y ríos" loading="lazy" data-src="https://gutierrezeni-png.github.io/panel-presas-semar/"></iframe>
+    <div class="estado"></div>
+  </section>
+
+  <section class="app" data-app="mapas" aria-label="Mapas de lluvia y viento">
+    <div class="cabeza">
+      <div><h2>Mapas de lluvia y viento</h2><p>Pronóstico a 4 días y sistemas oceánicos en la jurisdicción</p></div>
+      <div class="acciones">
+        <button type="button" class="recargar">Recargar</button>
+        <a class="abrir" target="_blank" rel="noopener">Abrir completa</a>
+      </div>
+    </div>
+    <iframe title="Mapas de lluvia y viento" loading="lazy" data-src="https://gutierrezeni-png.github.io/monitor-mapas-sc/"></iframe>
+    <div class="estado"></div>
+  </section>
+</main>
+
+<script>
+const RECARGA_MIN = 15;   // las tres apps se recargan solas cada 15 minutos
+const apps = [...document.querySelectorAll(".app")];
+
+function guardar(clave, valor) { try { localStorage.setItem(clave, valor); } catch (e) {} }
+function leer(clave) { try { return localStorage.getItem(clave); } catch (e) { return null; } }
+
+function horaLocal(d) {
+  return d.toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit", timeZone: "America/Mexico_City" });
+}
+
+function cargar(app) {
+  const marco = app.querySelector("iframe");
+  const url = marco.dataset.src;
+  // ?t= evita que el navegador muestre una copia vieja guardada
+  marco.src = url + (url.includes("?") ? "&" : "?") + "t=" + Date.now();
+  app.querySelector(".estado").textContent = "Actualizada a las " + horaLocal(new Date());
+}
+
+apps.forEach(app => {
+  app.querySelector(".abrir").href = app.querySelector("iframe").dataset.src;
+  app.querySelector(".recargar").addEventListener("click", () => cargar(app));
+  cargar(app);
+});
+setInterval(() => apps.forEach(cargar), RECARGA_MIN * 60 * 1000);
+
+// Vista: las tres juntas o una a la vez (se recuerda en este navegador)
+function ponerVista(v) {
+  document.body.dataset.vista = v;
+  document.querySelectorAll(".vista button").forEach(b => b.setAttribute("aria-pressed", b.dataset.vista === v));
+  guardar("centro_vista", v);
+}
+document.querySelectorAll(".vista button").forEach(b => b.addEventListener("click", () => ponerVista(b.dataset.vista)));
+
+// Pestañas
+function ponerApp(nombre) {
+  apps.forEach(a => a.classList.toggle("activa", a.dataset.app === nombre));
+  document.querySelectorAll("nav.pestanas button").forEach(b => b.setAttribute("aria-selected", b.dataset.app === nombre));
+  guardar("centro_app", nombre);
+}
+document.querySelectorAll("nav.pestanas button").forEach(b => b.addEventListener("click", () => ponerApp(b.dataset.app)));
+
+ponerVista(leer("centro_vista") || "tres");
+ponerApp(leer("centro_app") || "pronostico");
+
+// Reloj en hora del Istmo
+function tic() { document.getElementById("hora").textContent = horaLocal(new Date()); }
+tic(); setInterval(tic, 30 * 1000);
+</script>
+</body>
+</html>
