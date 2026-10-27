@@ -27,13 +27,13 @@
 :root {
   --fondo: #E9EFF3; --barra: #0E2A44; --barra-texto: #F2F6F9; --panel: #FFFFFF;
   --texto: #15212C; --tenue: #5A6B79; --linea: #CDD8E0;
-  --pronostico: #2A9D96; --presas: #2F7D5B; --mapas: #B5722A; --carta: #4F5BD5;
+  --pronostico: #2A9D96; --presas: #2F7D5B; --mapas: #B5722A; --carta: #4F5BD5; --boletin: #E8A33D;
   --enfoque: #2A9D96; color-scheme: light;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     --fondo: #0C141B; --barra: #08192A; --panel: #121D27; --texto: #E3EAF0; --tenue: #93A4B3;
-    --linea: #253545; --pronostico: #4CC3BB; --presas: #5BB58C; --mapas: #E0A15A; --carta: #8E96F0;
+    --linea: #253545; --pronostico: #4CC3BB; --presas: #5BB58C; --mapas: #E0A15A; --carta: #8E96F0; --boletin: #F0B95A;
     --enfoque: #4CC3BB; color-scheme: dark;
   }
 }
@@ -74,6 +74,7 @@ nav.menu .detalle { font-size: .76rem; opacity: .68; }
 [data-app="presas"] { --acento: var(--presas); }
 [data-app="mapas"] { --acento: var(--mapas); }
 [data-app="carta"] { --acento: var(--carta); }
+[data-app="boletin"] { --acento: var(--boletin); }
 .pie { margin-top: auto; padding: 14px 16px 16px; border-top: 1px solid rgba(255,255,255,.12);
   display: flex; flex-direction: column; gap: 10px; }
 .reloj { font: 600 1.5rem/1 "Barlow Condensed", sans-serif; }
@@ -162,6 +163,11 @@ button:focus-visible, a:focus-visible { outline: 3px solid var(--enfoque); outli
   </div>
 
   <nav class="menu" aria-label="Apps">
+    <button type="button" data-app="boletin">
+      <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg></span>
+      <span class="nombre">Boletín<span class="largo"> del día</span></span>
+      <span class="detalle">Resumen, puertos y qué viene</span>
+    </button>
     <button type="button" data-app="pronostico">
       <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="8" cy="8" r="3"/><path d="M8 2v1.5M2 8h1.5M3.8 3.8l1 1M12.2 3.8l-1 1"/><path d="M7 19h10a4 4 0 0 0 0-8 5 5 0 0 0-9.6 1.6A3.2 3.2 0 0 0 7 19z"/></svg></span>
       <span class="nombre">Pronóstico<span class="largo"> local</span></span>
@@ -194,6 +200,16 @@ button:focus-visible, a:focus-visible { outline: 3px solid var(--enfoque); outli
 </aside>
 
 <main>
+  <section class="app" data-app="boletin" aria-label="Boletín del día">
+    <div class="cabeza">
+      <div><h2>Boletín del día</h2><p>Condiciones actuales, semáforo de puertos, lo que viene y texto para compartir</p></div>
+      <div class="acciones"><span class="estado"></span>
+        <button type="button" class="recargar">Recargar</button>
+        <a class="abrir" target="_blank" rel="noopener">Abrir completa</a></div>
+    </div>
+    <iframe title="Boletín del día" data-src="https://gutierrezeni-png.github.io/centro-eios/boletin/"></iframe>
+  </section>
+
   <section class="app" data-app="pronostico" aria-label="Pronóstico local">
     <div class="cabeza">
       <div><h2>Pronóstico local</h2><p>Salina Cruz, San Dionisio y Capitanía, por hora a 72 h</p></div>
@@ -276,7 +292,7 @@ setInterval(() => { const a = apps.find(x => x.classList.contains("activa")); if
             RECARGA_MIN * 60 * 1000);
 
 // Al abrir: la app del enlace (#carta, #presas…) o la última que se consultó
-mostrar(location.hash.slice(1) || leer("centro_app") || "pronostico");
+mostrar(location.hash.slice(1) || "boletin");
 
 // Compartir: en el celular abre el menú de compartir; en la PC copia el enlace.
 const ENLACE = "https://gutierrezeni-png.github.io/centro-eios/";
@@ -288,7 +304,7 @@ document.getElementById("compartir").addEventListener("click", async () => {
   const actual = apps.find(x => x.classList.contains("activa"));
   const url = ENLACE + (actual ? "#" + actual.dataset.app : "");
   const datos = { title: "Centro meteorológico E.I.O. Salina Cruz",
-                  text: "Pronóstico local, presas y ríos, mapas de lluvia y viento y carta sinóptica de Guerrero a Chiapas:",
+                  text: "Boletín del día, pronóstico local, presas y ríos, mapas de lluvia y viento, carta sinóptica y oleaje de Guerrero a Chiapas:",
                   url };
   if (navigator.share) { try { await navigator.share(datos); } catch (e) {} return; }
   try { await navigator.clipboard.writeText(url); aviso("Enlace copiado: " + url); }
