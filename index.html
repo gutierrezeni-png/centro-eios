@@ -36,6 +36,7 @@
   --pronostico: #2A9D96;
   --presas: #2F7D5B;
   --mapas: #B5722A;
+  --carta: #4F5BD5;
   --enfoque: #2A9D96;
   color-scheme: light;
 }
@@ -43,7 +44,7 @@
   :root:not([data-theme="light"]) {
     --fondo: #0C141B; --barra: #08192A; --panel: #121D27; --texto: #E3EAF0;
     --tenue: #93A4B3; --linea: #253545; --pronostico: #4CC3BB; --presas: #5BB58C;
-    --mapas: #E0A15A; --enfoque: #4CC3BB; color-scheme: dark;
+    --mapas: #E0A15A; --carta: #8E96F0; --enfoque: #4CC3BB; color-scheme: dark;
   }
 }
 :root { box-sizing: border-box; padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
@@ -97,11 +98,12 @@ nav.pestanas button[aria-selected="true"] { color: var(--texto); border-top-colo
 nav.pestanas button[data-app="pronostico"] { --acento: var(--pronostico); }
 nav.pestanas button[data-app="presas"] { --acento: var(--presas); }
 nav.pestanas button[data-app="mapas"] { --acento: var(--mapas); }
+nav.pestanas button[data-app="carta"] { --acento: var(--carta); }
 
 /* ---- paneles ---- */
 main { flex: 1; min-height: 0; display: grid; gap: 12px; padding: 12px 14px 14px; }
-body[data-vista="tres"] main { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-body[data-vista="una"] main { grid-template-columns: 1fr; padding-top: 0; }
+body[data-vista="todas"] main { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: repeat(2, minmax(0, 1fr)); }
+body[data-vista="una"] main { grid-template-columns: 1fr; grid-template-rows: minmax(0, 1fr); padding-top: 0; }
 body[data-vista="una"] nav.pestanas { display: flex; }
 body[data-vista="una"] .app:not(.activa) { display: none; }
 body[data-vista="una"] .app { border-top-left-radius: 0; border-top-right-radius: 0; }
@@ -113,6 +115,7 @@ body[data-vista="una"] .app { border-top-left-radius: 0; border-top-right-radius
 }
 .app[data-app="presas"] { --acento: var(--presas); }
 .app[data-app="mapas"] { --acento: var(--mapas); }
+.app[data-app="carta"] { --acento: var(--carta); }
 .app > .cabeza {
   display: flex; align-items: center; gap: 10px; padding: 9px 12px;
   border-top: 5px solid var(--acento); border-bottom: 1px solid var(--linea);
@@ -133,7 +136,7 @@ button:focus-visible, a:focus-visible { outline: 3px solid var(--enfoque); outli
 /* En pantallas angostas siempre se ve una app a la vez (el selector de vista se oculta) */
 @media (max-width: 1100px) {
   .vista { display: none; }
-  body[data-vista] main { grid-template-columns: 1fr; padding-top: 0; }
+  body[data-vista] main { grid-template-columns: 1fr; grid-template-rows: minmax(0, 1fr); padding-top: 0; }
   body[data-vista] nav.pestanas { display: flex; }
   body[data-vista] .app:not(.activa) { display: none; }
   body[data-vista] .app { border-top-left-radius: 0; border-top-right-radius: 0; }
@@ -155,14 +158,14 @@ button:focus-visible, a:focus-visible { outline: 3px solid var(--enfoque); outli
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 </head>
-<body data-vista="tres">
+<body data-vista="todas">
 <header>
   <div class="marca">
     <h1>Centro meteorológico E.I.O. Salina Cruz</h1>
-    <p>Pronóstico local, presas y ríos, y sistemas oceánicos de Guerrero a Chiapas</p>
+    <p>Pronóstico local, presas y ríos, sistemas oceánicos y carta sinóptica de Guerrero a Chiapas</p>
   </div>
   <div class="vista" role="group" aria-label="Forma de ver las apps">
-    <button type="button" data-vista="tres" aria-pressed="true">Las tres</button>
+    <button type="button" data-vista="todas" aria-pressed="true">Las cuatro</button>
     <button type="button" data-vista="una" aria-pressed="false">Una a la vez</button>
   </div>
   <button type="button" id="instalar" class="compartir instalar" hidden>Instalar app</button>
@@ -174,6 +177,7 @@ button:focus-visible, a:focus-visible { outline: 3px solid var(--enfoque); outli
   <button type="button" role="tab" data-app="pronostico" aria-selected="true">Pronóstico</button>
   <button type="button" role="tab" data-app="presas" aria-selected="false">Presas y ríos</button>
   <button type="button" role="tab" data-app="mapas" aria-selected="false">Mapas<span class="largo"> de lluvia y viento</span></button>
+  <button type="button" role="tab" data-app="carta" aria-selected="false">Carta<span class="largo"> sinóptica</span></button>
 </nav>
 
 <main>
@@ -212,10 +216,22 @@ button:focus-visible, a:focus-visible { outline: 3px solid var(--enfoque); outli
     <iframe title="Mapas de lluvia y viento" loading="lazy" data-src="https://gutierrezeni-png.github.io/monitor-mapas-sc/"></iframe>
     <div class="estado"></div>
   </section>
+
+  <section class="app" data-app="carta" aria-label="Carta sinóptica">
+    <div class="cabeza">
+      <div><h2>Carta sinóptica</h2><p>Sistemas que afectan a México e índice del Tehuantepecer (GFS)</p></div>
+      <div class="acciones">
+        <button type="button" class="recargar">Recargar</button>
+        <a class="abrir" target="_blank" rel="noopener">Abrir completa</a>
+      </div>
+    </div>
+    <iframe title="Carta sinóptica" loading="lazy" data-src="https://gutierrezeni-png.github.io/centro-eios/carta/"></iframe>
+    <div class="estado"></div>
+  </section>
 </main>
 
 <script>
-const RECARGA_MIN = 15;   // las tres apps se recargan solas cada 15 minutos
+const RECARGA_MIN = 15;   // las cuatro apps se recargan solas cada 15 minutos
 const apps = [...document.querySelectorAll(".app")];
 
 function guardar(clave, valor) { try { localStorage.setItem(clave, valor); } catch (e) {} }
@@ -240,7 +256,7 @@ apps.forEach(app => {
 });
 setInterval(() => apps.forEach(cargar), RECARGA_MIN * 60 * 1000);
 
-// Vista: las tres juntas o una a la vez (se recuerda en este navegador)
+// Vista: las cuatro juntas o una a la vez (se recuerda en este navegador)
 function ponerVista(v) {
   document.body.dataset.vista = v;
   document.querySelectorAll(".vista button").forEach(b => b.setAttribute("aria-pressed", b.dataset.vista === v));
@@ -256,7 +272,7 @@ function ponerApp(nombre) {
 }
 document.querySelectorAll("nav.pestanas button").forEach(b => b.addEventListener("click", () => ponerApp(b.dataset.app)));
 
-ponerVista(leer("centro_vista") || "tres");
+ponerVista(leer("centro_vista") === "una" ? "una" : "todas");
 ponerApp(leer("centro_app") || "pronostico");
 
 // Compartir: en el celular abre el menú de compartir (WhatsApp, correo…);
@@ -268,7 +284,7 @@ function aviso(texto) {
 }
 document.getElementById("compartir").addEventListener("click", async () => {
   const datos = { title: "Centro meteorológico E.I.O. Salina Cruz",
-                  text: "Pronóstico local, presas y ríos, y mapas de lluvia y viento de Guerrero a Chiapas:",
+                  text: "Pronóstico local, presas y ríos, mapas de lluvia y viento y carta sinóptica de Guerrero a Chiapas:",
                   url: ENLACE };
   if (navigator.share) {
     try { await navigator.share(datos); } catch (e) {}
