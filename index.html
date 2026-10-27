@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Centro meteorológico · E.I.O. Salina Cruz</title>
-<meta name="description" content="Pronóstico local, presas y ríos, y mapas de lluvia y viento de Guerrero a Chiapas.">
+<meta name="description" content="Pronóstico local, presas y ríos, mapas de lluvia y viento y carta sinóptica de Guerrero a Chiapas.">
 <meta name="theme-color" content="#0E2A44">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" href="favicon.png">
@@ -14,7 +14,7 @@
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://gutierrezeni-png.github.io/centro-eios/">
 <meta property="og:title" content="Pronóstico EIOS · Centro meteorológico E.I.O. Salina Cruz">
-<meta property="og:description" content="Pronóstico local, presas y ríos, y mapas de lluvia y viento de Guerrero a Chiapas.">
+<meta property="og:description" content="Pronóstico local, presas y ríos, mapas de lluvia y viento y carta sinóptica de Guerrero a Chiapas.">
 <meta property="og:image" content="https://gutierrezeni-png.github.io/centro-eios/vista-previa.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
@@ -23,220 +23,226 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-/* Paleta tomada de las propias apps: azul marino de la Armada, turquesa del pronóstico,
-   verde agua de las presas y ámbar de los sistemas oceánicos. */
+/* Paleta de la Armada y de cada app: turquesa pronóstico, verde presas, ámbar mapas, índigo carta. */
 :root {
-  --fondo: #E9EFF3;
-  --barra: #0E2A44;
-  --barra-texto: #F2F6F9;
-  --panel: #FFFFFF;
-  --texto: #15212C;
-  --tenue: #5A6B79;
-  --linea: #CDD8E0;
-  --pronostico: #2A9D96;
-  --presas: #2F7D5B;
-  --mapas: #B5722A;
-  --carta: #4F5BD5;
-  --enfoque: #2A9D96;
-  color-scheme: light;
+  --fondo: #E9EFF3; --barra: #0E2A44; --barra-texto: #F2F6F9; --panel: #FFFFFF;
+  --texto: #15212C; --tenue: #5A6B79; --linea: #CDD8E0;
+  --pronostico: #2A9D96; --presas: #2F7D5B; --mapas: #B5722A; --carta: #4F5BD5;
+  --enfoque: #2A9D96; color-scheme: light;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --fondo: #0C141B; --barra: #08192A; --panel: #121D27; --texto: #E3EAF0;
-    --tenue: #93A4B3; --linea: #253545; --pronostico: #4CC3BB; --presas: #5BB58C;
-    --mapas: #E0A15A; --carta: #8E96F0; --enfoque: #4CC3BB; color-scheme: dark;
+    --fondo: #0C141B; --barra: #08192A; --panel: #121D27; --texto: #E3EAF0; --tenue: #93A4B3;
+    --linea: #253545; --pronostico: #4CC3BB; --presas: #5BB58C; --mapas: #E0A15A; --carta: #8E96F0;
+    --enfoque: #4CC3BB; color-scheme: dark;
   }
 }
-:root { box-sizing: border-box; padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+:root { box-sizing: border-box; padding-top: env(safe-area-inset-top, 0px); }
 *, *::before, *::after { box-sizing: inherit; }
 html, body { height: 100%; margin: 0; }
 body {
   background: var(--fondo); color: var(--texto);
   font: 15px/1.4 "Barlow", "Segoe UI", system-ui, sans-serif;
-  display: flex; flex-direction: column;
+  display: grid; grid-template-columns: 250px minmax(0, 1fr); grid-template-rows: minmax(0, 1fr);
 }
 
-/* ---- barra superior ---- */
-header {
+/* ---------- menú lateral (PC) ---------- */
+aside {
   background: var(--barra); color: var(--barra-texto);
-  display: flex; align-items: center; gap: 18px; flex-wrap: wrap;
-  padding: 10px 18px;
+  display: flex; flex-direction: column; min-height: 0; overflow-y: auto;
 }
-.marca h1 {
-  margin: 0; font: 700 1.45rem/1.05 "Barlow Condensed", "Arial Narrow", sans-serif; letter-spacing: .01em;
+.marca { padding: 16px 16px 12px; border-bottom: 1px solid rgba(255,255,255,.12); }
+.marca h1 { margin: 0; font: 700 1.3rem/1.05 "Barlow Condensed", "Arial Narrow", sans-serif; }
+.marca p { margin: 4px 0 0; font-size: .8rem; opacity: .7; }
+nav.menu { display: flex; flex-direction: column; gap: 4px; padding: 12px 10px; }
+nav.menu button {
+  display: grid; grid-template-columns: 36px 1fr; align-items: center; column-gap: 10px;
+  width: 100%; text-align: left; background: transparent; color: var(--barra-texto);
+  border: 0; border-left: 4px solid transparent; border-radius: 8px; padding: 9px 10px 9px 8px; cursor: pointer;
+  font: inherit;
 }
-.marca p { margin: 2px 0 0; font-size: .85rem; opacity: .75; }
-.reloj { margin-left: auto; text-align: right; font: 600 1.15rem/1.1 "Barlow Condensed", sans-serif; }
-.reloj small { display: block; font: 400 .78rem "Barlow", sans-serif; opacity: .7; }
-.compartir {
-  margin-left: auto; background: var(--pronostico); color: #fff; border: 0; border-radius: 8px;
-  padding: 7px 14px; font: 600 .9rem "Barlow", sans-serif; cursor: pointer;
+nav.menu button:hover { background: rgba(255,255,255,.07); }
+nav.menu button[aria-current="page"] { background: rgba(255,255,255,.13); border-left-color: var(--acento); }
+nav.menu .ico {
+  grid-row: span 2; width: 36px; height: 36px; border-radius: 9px; display: grid; place-items: center;
+  background: color-mix(in srgb, var(--acento) 30%, transparent); color: #fff;
 }
-.compartir + .reloj { margin-left: 0; }
-.instalar { background: #E8A33D; color: #15212C; }
-.instalar + .compartir { margin-left: 8px; }
-.aviso {
-  position: fixed; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%);
-  background: var(--barra); color: var(--barra-texto); padding: 9px 16px; border-radius: 8px; font-size: .9rem;
-  box-shadow: 0 4px 14px rgba(0,0,0,.3); z-index: 10;
-}
-.vista { display: flex; border: 1px solid rgba(255,255,255,.28); border-radius: 8px; overflow: hidden; }
-.vista button {
-  background: transparent; color: var(--barra-texto); border: 0; padding: 7px 14px;
+nav.menu .ico svg { width: 21px; height: 21px; }
+nav.menu .nombre { font: 600 1rem/1.15 "Barlow", sans-serif; }
+nav.menu .detalle { font-size: .76rem; opacity: .68; }
+[data-app="pronostico"] { --acento: var(--pronostico); }
+[data-app="presas"] { --acento: var(--presas); }
+[data-app="mapas"] { --acento: var(--mapas); }
+[data-app="carta"] { --acento: var(--carta); }
+.pie { margin-top: auto; padding: 14px 16px 16px; border-top: 1px solid rgba(255,255,255,.12);
+  display: flex; flex-direction: column; gap: 10px; }
+.reloj { font: 600 1.5rem/1 "Barlow Condensed", sans-serif; }
+.reloj small { display: block; font: 400 .78rem "Barlow", sans-serif; opacity: .7; margin-top: 3px; }
+.botones { display: flex; gap: 8px; flex-wrap: wrap; }
+.boton {
+  background: var(--pronostico); color: #fff; border: 0; border-radius: 8px; padding: 7px 14px;
   font: 600 .9rem "Barlow", sans-serif; cursor: pointer;
 }
-.vista button[aria-pressed="true"] { background: rgba(255,255,255,.16); }
+.boton.instalar { background: #E8A33D; color: #15212C; }
 
-/* ---- pestañas (vista de una en una) ---- */
-nav.pestanas { display: none; gap: 6px; padding: 10px 14px 0; }
-nav.pestanas button {
-  flex: 1; border: 1px solid var(--linea); border-bottom: 0; background: var(--panel); color: var(--tenue);
-  padding: 9px 8px 8px; border-radius: 10px 10px 0 0; font: 600 .95rem "Barlow", sans-serif; cursor: pointer;
-  border-top: 4px solid transparent;
-}
-nav.pestanas button[aria-selected="true"] { color: var(--texto); border-top-color: var(--acento); }
-nav.pestanas button[data-app="pronostico"] { --acento: var(--pronostico); }
-nav.pestanas button[data-app="presas"] { --acento: var(--presas); }
-nav.pestanas button[data-app="mapas"] { --acento: var(--mapas); }
-nav.pestanas button[data-app="carta"] { --acento: var(--carta); }
-
-/* ---- paneles ---- */
-main { flex: 1; min-height: 0; display: grid; gap: 12px; padding: 12px 14px 14px; }
-body[data-vista="todas"] main { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: repeat(2, minmax(0, 1fr)); }
-body[data-vista="una"] main { grid-template-columns: 1fr; grid-template-rows: minmax(0, 1fr); padding-top: 0; }
-body[data-vista="una"] nav.pestanas { display: flex; }
-body[data-vista="una"] .app:not(.activa) { display: none; }
-body[data-vista="una"] .app { border-top-left-radius: 0; border-top-right-radius: 0; }
-
+/* ---------- área de la app ---------- */
+main { min-height: 0; display: flex; flex-direction: column; padding: 12px; }
 .app {
-  --acento: var(--pronostico);
-  background: var(--panel); border: 1px solid var(--linea); border-radius: 12px;
-  display: flex; flex-direction: column; min-height: 0; overflow: hidden;
+  flex: 1; min-height: 0; display: none; flex-direction: column;
+  background: var(--panel); border: 1px solid var(--linea); border-radius: 12px; overflow: hidden;
 }
-.app[data-app="presas"] { --acento: var(--presas); }
-.app[data-app="mapas"] { --acento: var(--mapas); }
-.app[data-app="carta"] { --acento: var(--carta); }
-.app > .cabeza {
-  display: flex; align-items: center; gap: 10px; padding: 9px 12px;
+.app.activa { display: flex; }
+.cabeza {
+  display: flex; align-items: center; gap: 10px; padding: 9px 14px;
   border-top: 5px solid var(--acento); border-bottom: 1px solid var(--linea);
 }
-.cabeza h2 { margin: 0; font: 700 1.2rem/1.1 "Barlow Condensed", sans-serif; }
-.cabeza p { margin: 1px 0 0; font-size: .82rem; color: var(--tenue); }
-.cabeza .acciones { margin-left: auto; display: flex; gap: 6px; flex-shrink: 0; }
-.cabeza a, .cabeza button {
+.cabeza h2 { margin: 0; font: 700 1.3rem/1.1 "Barlow Condensed", sans-serif; }
+.cabeza p { margin: 1px 0 0; font-size: .84rem; color: var(--tenue); }
+.acciones { margin-left: auto; display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.estado { font-size: .78rem; color: var(--tenue); white-space: nowrap; }
+.acciones a, .acciones button {
   border: 1px solid var(--linea); background: transparent; color: var(--texto); text-decoration: none;
-  padding: 5px 10px; border-radius: 7px; font: 500 .85rem "Barlow", sans-serif; cursor: pointer; white-space: nowrap;
+  padding: 5px 11px; border-radius: 7px; font: 500 .86rem "Barlow", sans-serif; cursor: pointer; white-space: nowrap;
 }
-.cabeza a:hover, .cabeza button:hover { border-color: var(--acento); }
+.acciones a:hover, .acciones button:hover { border-color: var(--acento); }
 .app iframe { flex: 1; width: 100%; min-height: 0; border: 0; background: #fff; }
-.app .estado { font-size: .78rem; color: var(--tenue); padding: 5px 12px; border-top: 1px solid var(--linea); }
 
+.aviso {
+  position: fixed; left: 50%; bottom: calc(80px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%);
+  background: var(--barra); color: var(--barra-texto); padding: 9px 16px; border-radius: 8px; font-size: .9rem;
+  box-shadow: 0 4px 14px rgba(0,0,0,.3); z-index: 20;
+}
 button:focus-visible, a:focus-visible { outline: 3px solid var(--enfoque); outline-offset: 2px; }
 
-/* En pantallas angostas siempre se ve una app a la vez (el selector de vista se oculta) */
-@media (max-width: 1100px) {
-  .vista { display: none; }
-  body[data-vista] main { grid-template-columns: 1fr; grid-template-rows: minmax(0, 1fr); padding-top: 0; }
-  body[data-vista] nav.pestanas { display: flex; }
-  body[data-vista] .app:not(.activa) { display: none; }
-  body[data-vista] .app { border-top-left-radius: 0; border-top-right-radius: 0; }
-}
-@media (max-width: 560px) {
-  header { padding: 8px 12px; gap: 10px; }
-  .marca h1 { font-size: 1.1rem; }
-  .reloj { font-size: 1rem; }
-  .reloj small { display: none; }
-  .compartir { padding: 6px 10px; font-size: .85rem; }
-  nav.pestanas .largo { display: none; }
+/* ---------- celular y tableta: barra arriba y menú abajo ---------- */
+@media (max-width: 900px) {
+  body { grid-template-columns: minmax(0, 1fr) auto; grid-template-rows: auto minmax(0, 1fr) auto; }
+  aside { display: contents; }
+  .marca { grid-row: 1; background: var(--barra); color: var(--barra-texto); display: flex; align-items: center;
+    gap: 10px; padding: 9px 12px; border: 0; }
+  .marca h1 { font-size: 1.12rem; }
   .marca p { display: none; }
-  .cabeza p { display: none; }
-  .cabeza a.abrir { display: none; }
-  main { padding: 0 8px 8px; }
-  nav.pestanas { padding: 8px 8px 0; }
-  nav.pestanas button { font-size: .88rem; padding: 8px 4px 7px; }
+  .pie { grid-row: 1; grid-column: 2; background: var(--barra); flex-direction: row; align-items: center;
+    border: 0; padding: 0 12px 0 6px; margin: 0; color: var(--barra-texto); }
+  .reloj { font-size: 1.05rem; }
+  .reloj small { display: none; }
+  .boton { padding: 6px 10px; font-size: .84rem; }
+  main { grid-row: 2; grid-column: 1 / -1; padding: 8px; }
+  nav.menu {
+    grid-row: 3; grid-column: 1 / -1; flex-direction: row; gap: 0; padding: 4px 4px calc(4px + env(safe-area-inset-bottom, 0px));
+    background: var(--barra); border-top: 1px solid rgba(255,255,255,.12);
+  }
+  nav.menu button {
+    grid-template-columns: 1fr; justify-items: center; row-gap: 2px; text-align: center;
+    border-left: 0; border-top: 3px solid transparent; border-radius: 0; padding: 6px 2px 4px; color: var(--barra-texto);
+  }
+  nav.menu button[aria-current="page"] { border-top-color: var(--acento); background: rgba(255,255,255,.1); }
+  nav.menu .ico { grid-row: auto; width: 30px; height: 26px; background: transparent; }
+  nav.menu button[aria-current="page"] .ico { background: color-mix(in srgb, var(--acento) 35%, transparent); }
+  nav.menu .nombre { font-size: .8rem; }
+  nav.menu .detalle, nav.menu .largo { display: none; }
+  .cabeza { padding: 7px 10px; }
+  .cabeza h2 { font-size: 1.1rem; }
+  .cabeza p, .acciones a.abrir, .estado { display: none; }
 }
+/* Encabezado sobre la barra en el celular: marca a la izquierda, reloj y botones a la derecha */
+@media (max-width: 900px) { .marca { grid-column: 1; min-width: 0; } .marca h1 { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } }
+@media (max-width: 900px) { .marca h1 .largo { display: none; } }
+@media (max-width: 360px) { .reloj { display: none; } }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 </head>
-<body data-vista="todas">
-<header>
+<body>
+<aside>
   <div class="marca">
-    <h1>Centro meteorológico E.I.O. Salina Cruz</h1>
-    <p>Pronóstico local, presas y ríos, sistemas oceánicos y carta sinóptica de Guerrero a Chiapas</p>
+    <div>
+      <h1>Centro meteorológico<span class="largo"> E.I.O. Salina Cruz</span></h1>
+      <p>Jurisdicción de Guerrero a Chiapas</p>
+    </div>
   </div>
-  <div class="vista" role="group" aria-label="Forma de ver las apps">
-    <button type="button" data-vista="todas" aria-pressed="true">Las cuatro</button>
-    <button type="button" data-vista="una" aria-pressed="false">Una a la vez</button>
-  </div>
-  <button type="button" id="instalar" class="compartir instalar" hidden>Instalar app</button>
-  <button type="button" id="compartir" class="compartir">Compartir</button>
-  <div class="reloj"><span id="hora">--:--</span><small>hora del Istmo</small></div>
-</header>
 
-<nav class="pestanas" role="tablist" aria-label="Apps">
-  <button type="button" role="tab" data-app="pronostico" aria-selected="true">Pronóstico</button>
-  <button type="button" role="tab" data-app="presas" aria-selected="false">Presas y ríos</button>
-  <button type="button" role="tab" data-app="mapas" aria-selected="false">Mapas<span class="largo"> de lluvia y viento</span></button>
-  <button type="button" role="tab" data-app="carta" aria-selected="false">Carta<span class="largo"> sinóptica</span></button>
-</nav>
+  <nav class="menu" aria-label="Apps">
+    <button type="button" data-app="pronostico">
+      <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="8" cy="8" r="3"/><path d="M8 2v1.5M2 8h1.5M3.8 3.8l1 1M12.2 3.8l-1 1"/><path d="M7 19h10a4 4 0 0 0 0-8 5 5 0 0 0-9.6 1.6A3.2 3.2 0 0 0 7 19z"/></svg></span>
+      <span class="nombre">Pronóstico<span class="largo"> local</span></span>
+      <span class="detalle">Salina Cruz, San Dionisio, Capitanía</span>
+    </button>
+    <button type="button" data-app="presas">
+      <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3c3.5 4.2 6 7.4 6 10.5A6 6 0 0 1 6 13.5C6 10.4 8.5 7.2 12 3z"/><path d="M9 14.5a3 3 0 0 0 3 2.5"/></svg></span>
+      <span class="nombre">Presas<span class="largo"> y ríos</span></span>
+      <span class="detalle">Niveles CONAGUA</span>
+    </button>
+    <button type="button" data-app="mapas">
+      <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2z"/><path d="M9 4v14M15 6v14"/></svg></span>
+      <span class="nombre">Mapas<span class="largo"> lluvia y viento</span></span>
+      <span class="detalle">4 días y sistemas oceánicos</span>
+    </button>
+    <button type="button" data-app="carta">
+      <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 9c3-3 6-3 9 0s6 3 9 0"/><path d="M3 15c3-3 6-3 9 0s6 3 9 0"/><path d="M7 20l2-3M14 20l2-3"/></svg></span>
+      <span class="nombre">Carta<span class="largo"> sinóptica</span></span>
+      <span class="detalle">Sistemas y Tehuantepecer</span>
+    </button>
+  </nav>
+
+  <div class="pie">
+    <div class="reloj"><span id="hora">--:--</span><small>hora del Istmo</small></div>
+    <div class="botones">
+      <button type="button" id="instalar" class="boton instalar" hidden>Instalar app</button>
+      <button type="button" id="compartir" class="boton">Compartir</button>
+    </div>
+  </div>
+</aside>
 
 <main>
-  <section class="app activa" data-app="pronostico" aria-label="Pronóstico local">
+  <section class="app" data-app="pronostico" aria-label="Pronóstico local">
     <div class="cabeza">
       <div><h2>Pronóstico local</h2><p>Salina Cruz, San Dionisio y Capitanía, por hora a 72 h</p></div>
-      <div class="acciones">
+      <div class="acciones"><span class="estado"></span>
         <button type="button" class="recargar">Recargar</button>
-        <a class="abrir" target="_blank" rel="noopener">Abrir completa</a>
-      </div>
+        <a class="abrir" target="_blank" rel="noopener">Abrir completa</a></div>
     </div>
-    <iframe title="Pronóstico local" loading="lazy" data-src="https://gutierrezeni-png.github.io/panel-presas-semar/pronostico/"></iframe>
-    <div class="estado"></div>
+    <iframe title="Pronóstico local" data-src="https://gutierrezeni-png.github.io/panel-presas-semar/pronostico/"></iframe>
   </section>
 
   <section class="app" data-app="presas" aria-label="Presas y ríos">
     <div class="cabeza">
       <div><h2>Presas y ríos</h2><p>Nivel de presas de Guerrero, Oaxaca y Chiapas (CONAGUA)</p></div>
-      <div class="acciones">
+      <div class="acciones"><span class="estado"></span>
         <button type="button" class="recargar">Recargar</button>
-        <a class="abrir" target="_blank" rel="noopener">Abrir completa</a>
-      </div>
+        <a class="abrir" target="_blank" rel="noopener">Abrir completa</a></div>
     </div>
-    <iframe title="Presas y ríos" loading="lazy" data-src="https://gutierrezeni-png.github.io/panel-presas-semar/"></iframe>
-    <div class="estado"></div>
+    <iframe title="Presas y ríos" data-src="https://gutierrezeni-png.github.io/panel-presas-semar/"></iframe>
   </section>
 
   <section class="app" data-app="mapas" aria-label="Mapas de lluvia y viento">
     <div class="cabeza">
       <div><h2>Mapas de lluvia y viento</h2><p>Pronóstico a 4 días y sistemas oceánicos en la jurisdicción</p></div>
-      <div class="acciones">
+      <div class="acciones"><span class="estado"></span>
         <button type="button" class="recargar">Recargar</button>
-        <a class="abrir" target="_blank" rel="noopener">Abrir completa</a>
-      </div>
+        <a class="abrir" target="_blank" rel="noopener">Abrir completa</a></div>
     </div>
-    <iframe title="Mapas de lluvia y viento" loading="lazy" data-src="https://gutierrezeni-png.github.io/monitor-mapas-sc/"></iframe>
-    <div class="estado"></div>
+    <iframe title="Mapas de lluvia y viento" data-src="https://gutierrezeni-png.github.io/monitor-mapas-sc/"></iframe>
   </section>
 
   <section class="app" data-app="carta" aria-label="Carta sinóptica">
     <div class="cabeza">
       <div><h2>Carta sinóptica</h2><p>Sistemas que afectan a México e índice del Tehuantepecer (GFS)</p></div>
-      <div class="acciones">
+      <div class="acciones"><span class="estado"></span>
         <button type="button" class="recargar">Recargar</button>
-        <a class="abrir" target="_blank" rel="noopener">Abrir completa</a>
-      </div>
+        <a class="abrir" target="_blank" rel="noopener">Abrir completa</a></div>
     </div>
-    <iframe title="Carta sinóptica" loading="lazy" data-src="https://gutierrezeni-png.github.io/centro-eios/carta/"></iframe>
-    <div class="estado"></div>
+    <iframe title="Carta sinóptica" data-src="https://gutierrezeni-png.github.io/centro-eios/carta/"></iframe>
   </section>
 </main>
 
 <script>
-const RECARGA_MIN = 15;   // las cuatro apps se recargan solas cada 15 minutos
+const RECARGA_MIN = 15;   // la app a la vista se recarga sola cada 15 minutos
 const apps = [...document.querySelectorAll(".app")];
+const botones = [...document.querySelectorAll("nav.menu button")];
+const cargadaEn = {};     // cuándo se cargó cada app (las que no se ven no se descargan)
 
-function guardar(clave, valor) { try { localStorage.setItem(clave, valor); } catch (e) {} }
-function leer(clave) { try { return localStorage.getItem(clave); } catch (e) { return null; } }
-
+function guardar(c, v) { try { localStorage.setItem(c, v); } catch (e) {} }
+function leer(c) { try { return localStorage.getItem(c); } catch (e) { return null; } }
 function horaLocal(d) {
   return d.toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit", timeZone: "America/Mexico_City" });
 }
@@ -244,62 +250,55 @@ function horaLocal(d) {
 function cargar(app) {
   const marco = app.querySelector("iframe");
   const url = marco.dataset.src;
-  // ?t= evita que el navegador muestre una copia vieja guardada
-  marco.src = url + (url.includes("?") ? "&" : "?") + "t=" + Date.now();
-  app.querySelector(".estado").textContent = "Actualizada a las " + horaLocal(new Date());
+  marco.src = url + (url.includes("?") ? "&" : "?") + "t=" + Date.now();  // evita copias viejas
+  cargadaEn[app.dataset.app] = Date.now();
+  app.querySelector(".estado").textContent = "Actualizada " + horaLocal(new Date());
+}
+
+function mostrar(nombre) {
+  const app = apps.find(a => a.dataset.app === nombre) || apps[0];
+  apps.forEach(a => a.classList.toggle("activa", a === app));
+  botones.forEach(b => b.dataset.app === app.dataset.app
+    ? b.setAttribute("aria-current", "page") : b.removeAttribute("aria-current"));
+  const vieja = !cargadaEn[app.dataset.app] || Date.now() - cargadaEn[app.dataset.app] > RECARGA_MIN * 60000;
+  if (vieja) cargar(app);
+  guardar("centro_app", app.dataset.app);
+  if (location.hash !== "#" + app.dataset.app) history.replaceState(null, "", "#" + app.dataset.app);
 }
 
 apps.forEach(app => {
   app.querySelector(".abrir").href = app.querySelector("iframe").dataset.src;
   app.querySelector(".recargar").addEventListener("click", () => cargar(app));
-  cargar(app);
 });
-setInterval(() => apps.forEach(cargar), RECARGA_MIN * 60 * 1000);
+botones.forEach(b => b.addEventListener("click", () => mostrar(b.dataset.app)));
+window.addEventListener("hashchange", () => mostrar(location.hash.slice(1)));
+setInterval(() => { const a = apps.find(x => x.classList.contains("activa")); if (a) cargar(a); },
+            RECARGA_MIN * 60 * 1000);
 
-// Vista: las cuatro juntas o una a la vez (se recuerda en este navegador)
-function ponerVista(v) {
-  document.body.dataset.vista = v;
-  document.querySelectorAll(".vista button").forEach(b => b.setAttribute("aria-pressed", b.dataset.vista === v));
-  guardar("centro_vista", v);
-}
-document.querySelectorAll(".vista button").forEach(b => b.addEventListener("click", () => ponerVista(b.dataset.vista)));
+// Al abrir: la app del enlace (#carta, #presas…) o la última que se consultó
+mostrar(location.hash.slice(1) || leer("centro_app") || "pronostico");
 
-// Pestañas
-function ponerApp(nombre) {
-  apps.forEach(a => a.classList.toggle("activa", a.dataset.app === nombre));
-  document.querySelectorAll("nav.pestanas button").forEach(b => b.setAttribute("aria-selected", b.dataset.app === nombre));
-  guardar("centro_app", nombre);
-}
-document.querySelectorAll("nav.pestanas button").forEach(b => b.addEventListener("click", () => ponerApp(b.dataset.app)));
-
-ponerVista(leer("centro_vista") === "una" ? "una" : "todas");
-ponerApp(leer("centro_app") || "pronostico");
-
-// Compartir: en el celular abre el menú de compartir (WhatsApp, correo…);
-// en la PC copia el enlace.
+// Compartir: en el celular abre el menú de compartir; en la PC copia el enlace.
 const ENLACE = "https://gutierrezeni-png.github.io/centro-eios/";
 function aviso(texto) {
   const a = document.createElement("div"); a.className = "aviso"; a.textContent = texto;
   document.body.appendChild(a); setTimeout(() => a.remove(), 3000);
 }
 document.getElementById("compartir").addEventListener("click", async () => {
+  const actual = apps.find(x => x.classList.contains("activa"));
+  const url = ENLACE + (actual ? "#" + actual.dataset.app : "");
   const datos = { title: "Centro meteorológico E.I.O. Salina Cruz",
                   text: "Pronóstico local, presas y ríos, mapas de lluvia y viento y carta sinóptica de Guerrero a Chiapas:",
-                  url: ENLACE };
-  if (navigator.share) {
-    try { await navigator.share(datos); } catch (e) {}
-    return;
-  }
-  try { await navigator.clipboard.writeText(ENLACE); aviso("Enlace copiado: " + ENLACE); }
-  catch (e) { prompt("Copia este enlace:", ENLACE); }
+                  url };
+  if (navigator.share) { try { await navigator.share(datos); } catch (e) {} return; }
+  try { await navigator.clipboard.writeText(url); aviso("Enlace copiado: " + url); }
+  catch (e) { prompt("Copia este enlace:", url); }
 });
 
-// Botón "Instalar app": aparece cuando el navegador permite instalar la página
+// Botón "Instalar app"
 let pedidoInstalar = null;
 const btnInstalar = document.getElementById("instalar");
-window.addEventListener("beforeinstallprompt", e => {
-  e.preventDefault(); pedidoInstalar = e; btnInstalar.hidden = false;
-});
+window.addEventListener("beforeinstallprompt", e => { e.preventDefault(); pedidoInstalar = e; btnInstalar.hidden = false; });
 btnInstalar.addEventListener("click", async () => {
   if (!pedidoInstalar) return;
   pedidoInstalar.prompt();
@@ -307,18 +306,13 @@ btnInstalar.addEventListener("click", async () => {
   pedidoInstalar = null; btnInstalar.hidden = true;
 });
 window.addEventListener("appinstalled", () => { btnInstalar.hidden = true; aviso("App instalada"); });
-// En iPhone no existe ese aviso: se instala desde Compartir > Agregar a inicio
 const esIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
 const yaInstalada = window.matchMedia("(display-mode: standalone)").matches || navigator.standalone;
 if (esIOS && !yaInstalada) {
   btnInstalar.hidden = false;
   btnInstalar.onclick = () => aviso("En iPhone: botón Compartir de Safari → Agregar a inicio");
 }
-
-// Permite instalar la página como app
-if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("sw.js").catch(() => {});
-}
+if ("serviceWorker" in navigator) { navigator.serviceWorker.register("sw.js").catch(() => {}); }
 
 // Reloj en hora del Istmo
 function tic() { document.getElementById("hora").textContent = horaLocal(new Date()); }
