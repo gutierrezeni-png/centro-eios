@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Boletín del día — E.I.O. Salina Cruz</title>
+<style>
+:root { --fondo:#F4F7FA; --panel:#fff; --texto:#15212C; --tenue:#5A6B79; --linea:#CDD8E0; --acento:#0E2A44;
+        --verde:#2E8B57; --ambar:#D89A1E; --naranja:#E0662B; --rojo:#B3261E; color-scheme:light; }
+@media (prefers-color-scheme: dark) { :root { --fondo:#0C141B; --panel:#121D27; --texto:#E3EAF0; --tenue:#93A4B3;
+        --linea:#253545; --acento:#8EB4D9; color-scheme:dark; } }
+* { box-sizing:border-box; }
+body { margin:0; background:var(--fondo); color:var(--texto); font:15px/1.45 "Segoe UI", system-ui, sans-serif; padding:12px; }
+h1 { font-size:1.3rem; margin:0; } .sub { color:var(--tenue); font-size:.88rem; margin:2px 0 12px; }
+.tarjeta { background:var(--panel); border:1px solid var(--linea); border-radius:12px; padding:12px 14px; margin-bottom:12px; }
+.tarjeta h2 { font-size:1.02rem; margin:0 0 10px; display:flex; align-items:center; gap:8px; }
+.tarjeta h2 a { margin-left:auto; font-size:.8rem; font-weight:500; color:var(--acento); text-decoration:none; cursor:pointer; }
+.aviso { border-left:6px solid var(--c); background:color-mix(in srgb, var(--c) 10%, transparent); border-radius:8px; padding:9px 12px; margin:8px 0; }
+.aviso b { color:var(--c); display:block; } .aviso small { display:block; color:var(--tenue); margin-top:3px; }
+.ahora { display:grid; grid-template-columns:repeat(auto-fit, minmax(120px, 1fr)); gap:8px; }
+.dato { border:1px solid var(--linea); border-radius:8px; padding:8px 10px; }
+.dato span { color:var(--tenue); font-size:.78rem; display:block; } .dato b { font-size:1.25rem; }
+.dato small { color:var(--tenue); }
+.chips { display:flex; flex-wrap:wrap; gap:6px; margin-top:10px; }
+.chip { border-radius:14px; padding:2px 10px; font-size:.82rem; background:color-mix(in srgb, var(--c, #5A6B79) 15%, transparent); color:var(--c, var(--texto)); font-weight:600; }
+.pto { display:grid; grid-template-columns:150px 1fr; gap:4px 12px; padding:9px 0; border-bottom:1px solid var(--linea); align-items:center; }
+.pto:last-of-type { border-bottom:0; }
+.pto .nom { font-weight:600; } .pto .nom small { display:block; color:var(--tenue); font-weight:400; font-size:.72rem; }
+.pill { display:inline-block; border-radius:12px; padding:1px 9px; color:#fff; font-size:.78rem; font-weight:600; background:var(--c); }
+.barra { display:flex; height:16px; border-radius:4px; overflow:hidden; margin:5px 0 2px; }
+.barra i { flex:1; } .barra i.dia { box-shadow:inset 1px 0 0 rgba(0,0,0,.45); }
+.dias { display:flex; font-size:.7rem; color:var(--tenue); } .dias span { flex:1; }
+.pto .txt { font-size:.85rem; color:var(--tenue); }
+.leyenda { display:flex; flex-wrap:wrap; gap:6px 14px; font-size:.78rem; color:var(--tenue); margin-top:8px; }
+.leyenda i { display:inline-block; width:12px; height:12px; border-radius:2px; margin-right:4px; vertical-align:-1px; }
+.tl { position:relative; padding-left:24px; margin:0; }
+.tl:before { content:""; position:absolute; left:7px; top:6px; bottom:6px; width:2px; background:var(--linea); }
+.ev { position:relative; margin:0 0 12px; list-style:none; }
+.ev:before { content:""; position:absolute; left:-22px; top:5px; width:12px; height:12px; border-radius:50%; background:var(--c); border:2px solid var(--panel); }
+.ev .cuando { font-size:.78rem; color:var(--tenue); } .ev b { display:block; } .ev span { font-size:.88rem; color:var(--tenue); }
+textarea { width:100%; min-height:260px; border:1px solid var(--linea); border-radius:8px; padding:10px; font:14px/1.45 "Segoe UI", system-ui, sans-serif; background:var(--fondo); color:var(--texto); resize:vertical; }
+.fila { display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; align-items:center; }
+.fila input { flex:1 1 200px; border:1px solid var(--linea); border-radius:8px; padding:8px; background:var(--panel); color:var(--texto); font:inherit; }
+.boton { border:0; border-radius:10px; padding:10px 16px; font-weight:600; cursor:pointer; font:inherit; font-weight:600; }
+.wa { background:#25A162; color:#fff; } .copiar { background:var(--panel); color:var(--texto); border:1px solid var(--linea); }
+.nota { color:var(--tenue); font-size:.78rem; }
+.cargando { color:var(--tenue); font-style:italic; }
+@media (max-width:560px) { .pto { grid-template-columns:1fr; } body { padding:8px; } }
+</style></head><body>
+<h1>Boletín del día</h1>
+<p class="sub" id="fechaHoy">—</p>
+
+<div id="avisos"></div>
+
+<div class="tarjeta"><h2>Salina Cruz ahora <a data-app="pronostico">Ver pronóstico ›</a></h2>
+<div class="ahora" id="ahora"><p class="cargando">Cargando…</p></div>
+<div class="chips" id="chips"></div></div>
+
+<div class="tarjeta"><h2>Puertos: condiciones de cierre en las próximas 72 h <a data-app="carta">Ver carta ›</a></h2>
+<div id="puertos"><p class="cargando">Cargando…</p></div>
+<div class="leyenda"><span><i style="background:var(--verde)"></i>Abierto</span><span><i style="background:var(--ambar)"></i>Precaución (20 kt o más)</span>
+<span><i style="background:var(--naranja)"></i>Posible cierre a embarcaciones menores (25 kt por 6 h o más)</span>
+<span><i style="background:var(--rojo)"></i>Posible cierre a embarcaciones mayores (35 kt por 6 h o más)</span></div>
+<p class="nota">Pronóstico de condiciones con base en el viento sostenido del modelo GFS en la aproximación de cada puerto.
+La decisión de cerrar o abrir un puerto corresponde a la Capitanía de Puerto.</p></div>
+
+<div class="tarjeta"><h2>Qué viene</h2><ul class="tl" id="tl"><li class="cargando">Cargando…</li></ul></div>
+
+<div class="tarjeta"><h2>Texto para compartir</h2>
+<textarea id="texto" readonly></textarea>
+<div class="fila"><input id="revisado" placeholder="Revisado por (grado y nombre)">
+<button class="boton wa" id="btnWa">Enviar por WhatsApp</button><button class="boton copiar" id="btnCopiar">Copiar</button></div>
+<p class="nota">El texto se arma solo con los datos más recientes. Revíselo antes de enviarlo.</p></div>
+
+<p class="nota" id="fuentes"></p>
+
+<script>
+const BASE = location.origin + "/";
+const CENTRO = "https://gutierrezeni-png.github.io/centro-eios/";
+const ZONA = "America/Mexico_City";
+const DIAS = ["domingo","lunes","martes","miércoles","jueves","viernes","sábado"];
+const MESES = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
+const COLOR = { abierto:"var(--verde)", precaucion:"var(--ambar)", menores:"var(--naranja)", mayores:"var(--rojo)" };
+const ORDEN = { abierto:0, precaucion:1, menores:2, mayores:3 };
+
+function partes(iso) {
+  const d = new Date(iso);
+  const p = Object.fromEntries(new Intl.DateTimeFormat("es-MX", { timeZone: ZONA, weekday:"long", day:"numeric",
+    month:"numeric", year:"numeric", hour:"2-digit", minute:"2-digit", hourCycle:"h23" }).formatToParts(d).map(x => [x.type, x.value]));
+  return p;
+}
+function fechaLarga(iso) { const p = partes(iso); return `${p.weekday} ${p.day} a las ${p.hour}:${p.minute} h`; }
+function diaCorto(iso) { const p = partes(iso); return `${p.weekday.slice(0,3)} ${p.day}`; }
+function hora(iso) { const p = partes(iso); return `${p.hour}:${p.minute} h`; }
+function cardinal(g) { if (g == null || isNaN(g)) return "—";
+  return ["N","NNE","NE","ENE","E","ESE","SE","SSE","S","SSO","SO","OSO","O","ONO","NO","NNO"][Math.round(g / 22.5) % 16]; }
+function ft(m) { return (m * 3.28084).toFixed(0); }
+function esc(t) { return String(t).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+
+async function json(url) { try { const r = await fetch(url + "?t=" + Date.now(), { cache:"no-store" }); return r.ok ? await r.json() : null; } catch (e) { return null; } }
+function script(url) { return new Promise(res => { const s = document.createElement("script"); s.src = url + "?t=" + Date.now();
+  s.onload = () => res(true); s.onerror = () => res(false); document.head.appendChild(s); }); }
+async function presas() {
+  try { const r = await fetch(BASE + "panel-presas-semar/?t=" + Date.now(), { cache:"no-store" }); if (!r.ok) return null;
+    const doc = new DOMParser().parseFromString(await r.text(), "text/html");
+    const el = doc.getElementById("resumen-presas"); return el ? JSON.parse(el.textContent) : null; } catch (e) { return null; }
+}
+
+// abrir otra app dentro de Pronóstico EIOS
+document.querySelectorAll("a[data-app]").forEach(a => a.addEventListener("click", () => {
+  const app = a.dataset.app;
+  if (window.top !== window) { try { window.top.location.hash = app; return; } catch (e) {} }
+  window.open(CENTRO + "#" + app, "_blank");
+}));
+
+function ahoraLocal(datos) {
+  if (typeof PRONOSTICOS === "undefined" || !PRONOSTICOS.salina_cruz) return null;
+  const serie = PRONOSTICOS.salina_cruz.pronostico, t = Date.now();
+  let mejor = serie[0];
+  serie.forEach(r => { if (Math.abs(new Date(r.tiempo) - t) < Math.abs(new Date(mejor.tiempo) - t)) mejor = r; });
+  return mejor;
+}
+
+function pintarAhora(a, C) {
+  const cont = document.getElementById("ahora"), chips = document.getElementById("chips");
+  if (!a) { cont.innerHTML = '<p class="nota">El pronóstico local no está disponible en este momento.</p>'; }
+  else {
+    const kmh = v => (v * 3.6).toFixed(0), kt = v => (v * 1.943844).toFixed(0);
+    cont.innerHTML = `
+      <div class="dato"><span>Temperatura</span><b>${a.temp_c ?? "—"} °C</b></div>
+      <div class="dato"><span>Viento</span><b>${cardinal(a.viento_dir_deg)} ${kmh(a.viento_ms)} km/h</b><small> · ${kt(a.viento_ms)} kt</small></div>
+      <div class="dato"><span>Racha</span><b>${kmh(a.racha_ms)} km/h</b><small> · ${kt(a.racha_ms)} kt</small></div>
+      <div class="dato"><span>Humedad</span><b>${a.humedad_pct ?? "—"} %</b></div>
+      <div class="dato"><span>Presión</span><b>${a.presion_hpa ?? "—"} hPa</b></div>`;
+  }
+  const c = [];
+  if (C && C.tehuantepec) {
+    const t = C.tehuantepec;
+    c.push(t.norte ? `<span class="chip" style="--c:#B5722A">Norte ${esc(t.categoria)} en el golfo: ${t.kt} kt</span>`
+                   : `<span class="chip" style="--c:var(--verde)">Sin evento de Norte</span>`);
+  }
+  if (C && C.oleaje && C.oleaje.ahora["Salina Cruz (bocana)"]) {
+    const o = C.oleaje.ahora["Salina Cruz (bocana)"];
+    c.push(`<span class="chip">Oleaje en la bocana: ${o.hs.toFixed(1)} m (${ft(o.hs)} ft)</span>`);
+  }
+  chips.innerHTML = c.join("");
+}
+
+function pintarPuertos(P) {
+  const cont = document.getElementById("puertos");
+  if (!P) { cont.innerHTML = '<p class="nota">El semáforo de puertos todavía no está disponible.</p>'; return; }
+  cont.innerHTML = P.puertos.map(p => {
+    const ahora = Date.now();
+    const horas = p.horas.filter(h => new Date(h.t) >= ahora - 3600e3).slice(0, 72);
+    let diaPrev = null;
+    const segs = horas.map(h => { const d = partes(h.t).day; const cls = (diaPrev !== null && d !== diaPrev) ? ' class="dia"' : "";
+      diaPrev = d; return `<i${cls} style="background:${COLOR[h.n]}" title="${esc(fechaLarga(h.t))}: ${h.kt} kt"></i>`; }).join("");
+    const diasHtml = (() => { const grupos = []; horas.forEach(h => { const d = diaCorto(h.t);
+      if (!grupos.length || grupos[grupos.length - 1].d !== d) grupos.push({ d, n: 0 }); grupos[grupos.length - 1].n++; });
+      return grupos.map(g => `<span style="flex:${g.n}">${g.n >= 5 ? g.d : ""}</span>`).join(""); })();
+    let txt;
+    if (p.ventanas.length) {
+      txt = p.ventanas.map(v => `${esc(v.texto)} del ${esc(fechaLarga(v.desde))} al ${esc(fechaLarga(v.hasta))} (viento hasta ${v.max_kt} kt)`).join(". ");
+    } else if (p.peor === "precaucion") {
+      txt = `Precaución: viento de hasta ${p.kt_max} kt, sin llegar al criterio de cierre.`;
+    } else { txt = `Sin condiciones de cierre previstas. Viento máximo ${p.kt_max} kt.`; }
+    const nivel = P.niveles[p.nivel_ahora];
+    return `<div class="pto"><div class="nom">${esc(p.nombre)}<small>${esc(p.fuente)}</small></div>
+      <div><span class="pill" style="--c:${COLOR[p.nivel_ahora]}">Ahora: ${esc(nivel.texto)} · ${p.kt_ahora} kt</span>
+      <div class="barra">${segs}</div><div class="dias">${diasHtml}</div><div class="txt">${txt}</div></div></div>`;
+  }).join("");
+}
+
+function construir(C, PZ, LL) {
+  const avisos = [], eventos = [], lineas = [];
+  // --- puertos
+  if (C && C.puertos) {
+    C.puertos.puertos.forEach(p => p.ventanas.forEach(v => {
+      avisos.push({ c: v.tipo === "mayores" ? "var(--rojo)" : "var(--naranja)", t: `${v.texto} en ${p.nombre}`,
+                    d: `Del ${fechaLarga(v.desde)} al ${fechaLarga(v.hasta)}, con viento de hasta ${v.max_kt} kt.` });
+      eventos.push({ t: v.desde, c: v.tipo === "mayores" ? "var(--rojo)" : "var(--naranja)", cuando: `${fechaLarga(v.desde)} → ${fechaLarga(v.hasta)}`,
+                     titulo: `${v.texto}: ${p.nombre}`, det: `Viento sostenido de hasta ${v.max_kt} kt.` });
+    }));
+  }
+  // --- Norte
+  if (C && C.tehuantepec && C.tehuantepec.norte) {
+    const t = C.tehuantepec;
+    const hasta = t.norte_hasta ? ` Se mantiene hasta el ${fechaLarga(t.norte_hasta)}.` : "";
+    avisos.push({ c:"#B5722A", t:`Evento de Norte en el golfo de Tehuantepec (${t.categoria})`,
+                  d:`Viento máximo de ${t.kt} kt (${t.kmh} km/h) mar adentro.${hasta}` });
+    eventos.push({ t: new Date().toISOString(), c:"#B5722A", cuando: t.norte_hasta ? `Ahora → ${fechaLarga(t.norte_hasta)}` : "Ahora",
+                   titulo:"Norte en el golfo de Tehuantepec", det:`Hasta ${t.kt_max_72h ?? t.kt} kt mar adentro. Presión: golfo de México ${t.p_golfo} hPa, golfo de Tehuantepec ${t.p_pacifico} hPa (diferencia ${t.dp > 0 ? "+" : ""}${t.dp} hPa).` });
+  }
+  // --- oleaje
+  if (C && C.oleaje) {
+    C.oleaje.avisos.forEach(a => {
+      const cuando = a.cuando ? `El ${a.cuando}` : `Del ${a.desde} al ${a.hasta}`;
+      avisos.push({ c: a.tipo === "fondo" ? "#2A7FB5" : a.tipo === "alto" ? "var(--rojo)" : "#B5722A", t: a.titulo,
+                    d: `${a.zona}: hasta ${a.altura}. ${cuando}.`, n: a.significado });
+      eventos.push({ t: null, orden: 1, c: a.tipo === "fondo" ? "#2A7FB5" : "#B5722A", cuando: a.cuando || `${a.desde} → ${a.hasta}`,
+                     titulo: a.titulo, det: `${a.zona}: hasta ${a.altura}.` });
+    });
+  }
+  // --- presas
+  if (PZ && PZ.conteo && PZ.conteo.rojo) {
+    const nombres = PZ.presas.filter(p => p.color === "rojo").map(p => `${p.nombre} (${p.pct}%)`).join(", ");
+    avisos.push({ c:"var(--rojo)", t:`${PZ.conteo.rojo} presa(s) en alerta (95% o más)`, d: nombres });
+    eventos.push({ t:null, orden:2, c:"var(--rojo)", cuando:"Vigilar", titulo:`${PZ.conteo.rojo} presa(s) en alerta`,
+                   det:`${nombres}. Atentos a desfogues si llueve en las cuencas.` });
+  }
+  // --- lluvia
+  if (LL && LL.filas && LL.filas.length) {
+    const top = LL.filas.slice(0, 3).map(f => f.replace(/^\d+\.\s*/, ""));
+    eventos.push({ t:null, orden:3, c:"#2A9D96", cuando: "Próximos 4 días", titulo:"Lluvia máxima pronosticada", det: top.join(" · ") });
+  }
+  // --- sistemas
+  if (C && C.sistemas) C.sistemas.filter(s => s.relevante).forEach(s => {
+    avisos.push({ c:"var(--rojo)", t:s.nombre, d:`${s.donde} ${s.que}` });
+    eventos.push({ t:null, orden:0, c:"var(--rojo)", cuando:"Vigilar", titulo:s.nombre, det:`${s.donde} ${s.que}` });
+  });
+  eventos.sort((a, b) => (a.t ? 0 : 1) - (b.t ? 0 : 1) || (a.t && b.t ? new Date(a.t) - new Date(b.t) : (a.orden ?? 9) - (b.orden ?? 9)));
+  document.getElementById("avisos").innerHTML = avisos.length
+    ? `<div class="tarjeta"><h2>Avisos</h2>${avisos.map(a => `<div class="aviso" style="--c:${a.c}"><b>${esc(a.t)}</b>${esc(a.d)}${a.n ? `<small>${esc(a.n)}</small>` : ""}</div>`).join("")}</div>` : "";
+  document.getElementById("tl").innerHTML = eventos.length
+    ? eventos.map(e => `<li class="ev" style="--c:${e.c}"><div class="cuando">${esc(e.cuando)}</div><b>${esc(e.titulo)}</b><span>${esc(e.det)}</span></li>`).join("")
+    : '<li class="ev" style="--c:var(--verde)"><b>Sin eventos significativos</b><span>No se prevén condiciones adversas en las próximas 72 horas.</span></li>';
+  return { avisos, eventos };
+}
+
+function textoCompartir(a, C, PZ, LL) {
+  const L = [], ahora = new Date().toISOString(), p = partes(ahora);
+  L.push("*E.I.O. Salina Cruz — Boletín del día*");
+  L.push(`${p.weekday} ${p.day} de ${MESES[+p.month - 1]} de ${p.year}, ${p.hour}:${p.minute} h`);
+  L.push("");
+  if (a) L.push(`• *Salina Cruz ahora:* ${a.temp_c} °C, viento ${cardinal(a.viento_dir_deg)} ${(a.viento_ms * 3.6).toFixed(0)} km/h (${(a.viento_ms * 1.943844).toFixed(0)} kt), racha ${(a.racha_ms * 3.6).toFixed(0)} km/h.`);
+  if (C && C.tehuantepec) {
+    const t = C.tehuantepec;
+    L.push(t.norte ? `• *Norte en el golfo de Tehuantepec:* viento máximo ${t.kt} kt (${t.kmh} km/h) mar adentro${t.norte_hasta ? `; se mantiene hasta el ${fechaLarga(t.norte_hasta)}` : ""}.`
+                   : "• Sin evento de Norte en el golfo de Tehuantepec.");
+  }
+  if (C && C.puertos) {
+    const v = []; C.puertos.puertos.forEach(pp => pp.ventanas.forEach(w => v.push(`${w.texto.replace("Posible cierre", "posible cierre")} en ${pp.nombre} del ${fechaLarga(w.desde)} al ${fechaLarga(w.hasta)} (hasta ${w.max_kt} kt)`)));
+    L.push(v.length ? `• *Puertos:* ${v.join("; ")}.` : "• *Puertos:* sin condiciones de cierre previstas en las próximas 72 h.");
+  }
+  if (C && C.oleaje) {
+    const o = C.oleaje, g = o.max72["Golfo de Tehuantepec (mar adentro)"], b = o.ahora["Salina Cruz (bocana)"];
+    let t = "• *Oleaje:*";
+    if (g != null) t += ` golfo de Tehuantepec hasta ${g.toFixed(1)} m (${ft(g)} ft) mar adentro en las próximas 72 h;`;
+    if (b) t += ` bocana de Salina Cruz ${b.hs.toFixed(1)} m (${ft(b.hs)} ft) ahora.`;
+    L.push(t);
+    o.avisos.filter(x => x.tipo === "fondo").forEach(x => L.push(`• *${x.titulo}:* ${x.zona}, hasta ${x.altura}.`));
+  }
+  if (PZ && PZ.conteo) L.push(PZ.conteo.rojo ? `• *Presas:* ${PZ.conteo.rojo} en alerta: ${PZ.presas.filter(x => x.color === "rojo").map(x => `${x.nombre} ${x.pct}%`).join(", ")}.`
+                                             : "• *Presas:* ninguna en alerta.");
+  if (LL && LL.filas && LL.filas.length) L.push(`• *Lluvia máxima (próximos 4 días):* ${LL.filas[0].replace(/^\d+\.\s*/, "").replace(/\.+$/, "")}.`);
+  if (C && C.sistemas) C.sistemas.filter(s => /Tormenta|Huracán|Depresión|Ciclón/.test(s.nombre))
+    .forEach(s => L.push(`• *${s.nombre}:* ${s.donde} ${s.relevante ? "Vigilar su evolución." : "Sin efecto directo previsto en la jurisdicción."}`));
+  L.push("");
+  const rev = document.getElementById("revisado").value.trim();
+  if (rev) L.push(`Revisado por: ${rev}`);
+  L.push("Pronóstico preliminar automático. Más información: " + CENTRO);
+  return L.join("\n");
+}
+
+let ESTADO = {};
+async function cargar() {
+  const [C, PZ, LL, okP] = await Promise.all([
+    json(BASE + "centro-eios/carta/resumen.json"), presas(),
+    json(BASE + "monitor-mapas-sc/resumen_lluvia.json"),
+    script(BASE + "panel-presas-semar/pronostico/pronostico_datos.js")]);
+  const a = okP ? ahoraLocal() : null;
+  ESTADO = { a, C, PZ, LL };
+  const hoy = partes(new Date().toISOString());
+  document.getElementById("fechaHoy").textContent = `${hoy.weekday} ${hoy.day} de ${MESES[+hoy.month - 1]} de ${hoy.year} · actualizado a las ${hoy.hour}:${hoy.minute} h`;
+  pintarAhora(a, C); pintarPuertos(C && C.puertos); construir(C, PZ, LL);
+  document.getElementById("texto").value = textoCompartir(a, C, PZ, LL);
+  const f = [];
+  if (C) f.push(`carta sinóptica, oleaje y puertos: GFS corrida ${fechaLarga(C.ciclo)}`);
+  if (okP && typeof PRONOSTICO_GENERADO !== "undefined") f.push(`pronóstico local generado ${fechaLarga(PRONOSTICO_GENERADO)}`);
+  if (PZ && PZ.fecha) f.push(`presas: boletín CONAGUA ${PZ.fecha}`);
+  document.getElementById("fuentes").textContent = "Fuentes — " + (f.join(" · ") || "sin datos disponibles");
+}
+const inpRev = document.getElementById("revisado");
+try { inpRev.value = localStorage.getItem("boletin_revisado") || ""; } catch (e) {}
+inpRev.addEventListener("input", () => { try { localStorage.setItem("boletin_revisado", inpRev.value); } catch (e) {}
+  document.getElementById("texto").value = textoCompartir(ESTADO.a, ESTADO.C, ESTADO.PZ, ESTADO.LL); });
+document.getElementById("btnWa").addEventListener("click", () =>
+  window.open("https://wa.me/?text=" + encodeURIComponent(document.getElementById("texto").value), "_blank"));
+document.getElementById("btnCopiar").addEventListener("click", async () => {
+  const t = document.getElementById("texto");
+  try { await navigator.clipboard.writeText(t.value); } catch (e) { t.select(); document.execCommand("copy"); }
+  const b = document.getElementById("btnCopiar"); b.textContent = "Copiado"; setTimeout(() => b.textContent = "Copiar", 1500);
+});
+cargar();
+setInterval(cargar, 15 * 60 * 1000);
+</script>
+</body></html>
