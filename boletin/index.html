@@ -56,13 +56,13 @@ textarea { width:100%; min-height:260px; border:1px solid var(--linea); border-r
 
 <div class="tarjeta"><h2>Puertos: condiciones de cierre en las próximas 72 h <a data-app="carta">Ver carta ›</a></h2>
 <div id="puertos"><p class="cargando">Cargando…</p></div>
-<div class="leyenda"><span><i style="background:var(--verde)"></i>Abierto</span><span><i style="background:var(--ambar)"></i>Precaución (20 kt o más)</span>
-<span><i style="background:var(--naranja)"></i>Posible cierre a embarcaciones menores (25 kt por 6 h o más)</span>
-<span><i style="background:var(--rojo)"></i>Posible cierre a embarcaciones mayores (35 kt por 6 h o más)</span></div>
+<div class="leyenda"><span><i style="background:var(--verde)"></i>Abierto (menos de 37 km/h · 20 kt)</span><span><i style="background:var(--ambar)"></i>Precaución (37 km/h · 20 kt o más)</span>
+<span><i style="background:var(--naranja)"></i>Posible cierre a embarcaciones menores (46 km/h · 25 kt durante 6 h o más)</span>
+<span><i style="background:var(--rojo)"></i>Posible cierre a embarcaciones mayores (65 km/h · 35 kt durante 6 h o más)</span></div>
 <p class="nota">Pronóstico de condiciones con base en el viento sostenido del modelo GFS en la aproximación de cada puerto.
 La decisión de cerrar o abrir un puerto corresponde a la Capitanía de Puerto.</p></div>
 
-<div class="tarjeta"><h2>Qué viene</h2><ul class="tl" id="tl"><li class="cargando">Cargando…</li></ul></div>
+<div class="tarjeta"><h2>Eventos significativos</h2><ul class="tl" id="tl"><li class="cargando">Cargando…</li></ul></div>
 
 <div class="tarjeta"><h2>Texto para compartir</h2>
 <textarea id="texto" readonly></textarea>
@@ -93,6 +93,10 @@ function hora(iso) { const p = partes(iso); return `${p.hour}:${p.minute} h`; }
 function cardinal(g) { if (g == null || isNaN(g)) return "—";
   return ["N","NNE","NE","ENE","E","ESE","SE","SSE","S","SSO","SO","OSO","O","ONO","NO","NNO"][Math.round(g / 22.5) % 16]; }
 function ft(m) { return (m * 3.28084).toFixed(0); }
+// Unidades estándar del boletín: viento en km/h con su equivalencia en nudos; oleaje en metros con su equivalencia en pies
+function velKt(kt) { return kt == null || isNaN(kt) ? "—" : `${Math.round(kt * 1.852)} km/h (${Math.round(kt)} kt)`; }
+function velMs(ms) { return ms == null || isNaN(ms) ? "—" : velKt(ms * 1.943844); }
+function ola(m) { return m == null || isNaN(m) ? "—" : `${m.toFixed(1)} m (${ft(m)} ft)`; }
 function esc(t) { return String(t).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
 
 async function json(url) { try { const r = await fetch(url + "?t=" + Date.now(), { cache:"no-store" }); return r.ok ? await r.json() : null; } catch (e) { return null; } }
@@ -126,20 +130,20 @@ function pintarAhora(a, C) {
     const kmh = v => (v * 3.6).toFixed(0), kt = v => (v * 1.943844).toFixed(0);
     cont.innerHTML = `
       <div class="dato"><span>Temperatura</span><b>${a.temp_c ?? "—"} °C</b></div>
-      <div class="dato"><span>Viento</span><b>${cardinal(a.viento_dir_deg)} ${kmh(a.viento_ms)} km/h</b><small> · ${kt(a.viento_ms)} kt</small></div>
-      <div class="dato"><span>Racha</span><b>${kmh(a.racha_ms)} km/h</b><small> · ${kt(a.racha_ms)} kt</small></div>
+      <div class="dato"><span>Viento</span><b>${cardinal(a.viento_dir_deg)} ${kmh(a.viento_ms)} km/h</b><small> (${kt(a.viento_ms)} kt)</small></div>
+      <div class="dato"><span>Racha</span><b>${kmh(a.racha_ms)} km/h</b><small> (${kt(a.racha_ms)} kt)</small></div>
       <div class="dato"><span>Humedad</span><b>${a.humedad_pct ?? "—"} %</b></div>
       <div class="dato"><span>Presión</span><b>${a.presion_hpa ?? "—"} hPa</b></div>`;
   }
   const c = [];
   if (C && C.tehuantepec) {
     const t = C.tehuantepec;
-    c.push(t.norte ? `<span class="chip" style="--c:#B5722A">Norte ${esc(t.categoria)} en el golfo: ${t.kt} kt</span>`
+    c.push(t.norte ? `<span class="chip" style="--c:#B5722A">Norte ${esc(t.categoria)} en el golfo: ${velKt(t.kt)}</span>`
                    : `<span class="chip" style="--c:var(--verde)">Sin evento de Norte</span>`);
   }
   if (C && C.oleaje && C.oleaje.ahora["Salina Cruz (bocana)"]) {
     const o = C.oleaje.ahora["Salina Cruz (bocana)"];
-    c.push(`<span class="chip">Oleaje en la bocana: ${o.hs.toFixed(1)} m (${ft(o.hs)} ft)</span>`);
+    c.push(`<span class="chip">Oleaje en la bocana: ${ola(o.hs)}</span>`);
   }
   chips.innerHTML = c.join("");
 }
@@ -152,19 +156,19 @@ function pintarPuertos(P) {
     const horas = p.horas.filter(h => new Date(h.t) >= ahora - 3600e3).slice(0, 72);
     let diaPrev = null;
     const segs = horas.map(h => { const d = partes(h.t).day; const cls = (diaPrev !== null && d !== diaPrev) ? ' class="dia"' : "";
-      diaPrev = d; return `<i${cls} style="background:${COLOR[h.n]}" title="${esc(fechaLarga(h.t))}: ${h.kt} kt"></i>`; }).join("");
+      diaPrev = d; return `<i${cls} style="background:${COLOR[h.n]}" title="${esc(fechaLarga(h.t))}: ${velKt(h.kt)}"></i>`; }).join("");
     const diasHtml = (() => { const grupos = []; horas.forEach(h => { const d = diaCorto(h.t);
       if (!grupos.length || grupos[grupos.length - 1].d !== d) grupos.push({ d, n: 0 }); grupos[grupos.length - 1].n++; });
       return grupos.map(g => `<span style="flex:${g.n}">${g.n >= 5 ? g.d : ""}</span>`).join(""); })();
     let txt;
     if (p.ventanas.length) {
-      txt = p.ventanas.map(v => `${esc(v.texto)} del ${esc(fechaLarga(v.desde))} al ${esc(fechaLarga(v.hasta))} (viento hasta ${v.max_kt} kt)`).join(". ");
+      txt = p.ventanas.map(v => `${esc(v.texto)} del ${esc(fechaLarga(v.desde))} al ${esc(fechaLarga(v.hasta))} (viento de hasta ${velKt(v.max_kt)})`).join(". ");
     } else if (p.peor === "precaucion") {
-      txt = `Precaución: viento de hasta ${p.kt_max} kt, sin llegar al criterio de cierre.`;
-    } else { txt = `Sin condiciones de cierre previstas. Viento máximo ${p.kt_max} kt.`; }
+      txt = `Precaución: viento de hasta ${velKt(p.kt_max)}, sin llegar al criterio de cierre.`;
+    } else { txt = `Sin condiciones de cierre previstas. Viento máximo ${velKt(p.kt_max)}.`; }
     const nivel = P.niveles[p.nivel_ahora];
     return `<div class="pto"><div class="nom">${esc(p.nombre)}<small>${esc(p.fuente)}</small></div>
-      <div><span class="pill" style="--c:${COLOR[p.nivel_ahora]}">Ahora: ${esc(nivel.texto)} · ${p.kt_ahora} kt</span>
+      <div><span class="pill" style="--c:${COLOR[p.nivel_ahora]}">Ahora: ${esc(nivel.texto)} · ${velKt(p.kt_ahora)}</span>
       <div class="barra">${segs}</div><div class="dias">${diasHtml}</div><div class="txt">${txt}</div></div></div>`;
   }).join("");
 }
@@ -175,9 +179,9 @@ function construir(C, PZ, LL) {
   if (C && C.puertos) {
     C.puertos.puertos.forEach(p => p.ventanas.forEach(v => {
       avisos.push({ c: v.tipo === "mayores" ? "var(--rojo)" : "var(--naranja)", t: `${v.texto} en ${p.nombre}`,
-                    d: `Del ${fechaLarga(v.desde)} al ${fechaLarga(v.hasta)}, con viento de hasta ${v.max_kt} kt.` });
+                    d: `Del ${fechaLarga(v.desde)} al ${fechaLarga(v.hasta)}, con viento de hasta ${velKt(v.max_kt)}.` });
       eventos.push({ t: v.desde, c: v.tipo === "mayores" ? "var(--rojo)" : "var(--naranja)", cuando: `${fechaLarga(v.desde)} → ${fechaLarga(v.hasta)}`,
-                     titulo: `${v.texto}: ${p.nombre}`, det: `Viento sostenido de hasta ${v.max_kt} kt.` });
+                     titulo: `${v.texto}: ${p.nombre}`, det: `Viento sostenido de hasta ${velKt(v.max_kt)}.` });
     }));
   }
   // --- Norte
@@ -185,9 +189,9 @@ function construir(C, PZ, LL) {
     const t = C.tehuantepec;
     const hasta = t.norte_hasta ? ` Se mantiene hasta el ${fechaLarga(t.norte_hasta)}.` : "";
     avisos.push({ c:"#B5722A", t:`Evento de Norte en el golfo de Tehuantepec (${t.categoria})`,
-                  d:`Viento máximo de ${t.kt} kt (${t.kmh} km/h) mar adentro.${hasta}` });
+                  d:`Viento máximo de ${velKt(t.kt)} mar adentro.${hasta}` });
     eventos.push({ t: new Date().toISOString(), c:"#B5722A", cuando: t.norte_hasta ? `Ahora → ${fechaLarga(t.norte_hasta)}` : "Ahora",
-                   titulo:"Norte en el golfo de Tehuantepec", det:`Hasta ${t.kt_max_72h ?? t.kt} kt mar adentro. Presión: golfo de México ${t.p_golfo} hPa, golfo de Tehuantepec ${t.p_pacifico} hPa (diferencia ${t.dp > 0 ? "+" : ""}${t.dp} hPa).` });
+                   titulo:"Norte en el golfo de Tehuantepec", det:`Viento de hasta ${velKt(t.kt_max_72h ?? t.kt)} mar adentro. Presión: golfo de México ${t.p_golfo} hPa, golfo de Tehuantepec ${t.p_pacifico} hPa (diferencia ${t.dp > 0 ? "+" : ""}${t.dp} hPa).` });
   }
   // --- oleaje
   if (C && C.oleaje) {
@@ -230,23 +234,26 @@ function textoCompartir(a, C, PZ, LL) {
   L.push("*E.I.O. Salina Cruz — Boletín del día*");
   L.push(`${p.weekday} ${p.day} de ${MESES[+p.month - 1]} de ${p.year}, ${p.hour}:${p.minute} h`);
   L.push("");
-  if (a) L.push(`• *Salina Cruz ahora:* ${a.temp_c} °C, viento ${cardinal(a.viento_dir_deg)} ${(a.viento_ms * 3.6).toFixed(0)} km/h (${(a.viento_ms * 1.943844).toFixed(0)} kt), racha ${(a.racha_ms * 3.6).toFixed(0)} km/h.`);
+  if (a) L.push(`• *Salina Cruz ahora:* ${a.temp_c} °C, viento ${cardinal(a.viento_dir_deg)} ${velMs(a.viento_ms)}, racha ${velMs(a.racha_ms)}, humedad ${a.humedad_pct} %, presión ${a.presion_hpa} hPa.`);
   if (C && C.tehuantepec) {
     const t = C.tehuantepec;
-    L.push(t.norte ? `• *Norte en el golfo de Tehuantepec:* viento máximo ${t.kt} kt (${t.kmh} km/h) mar adentro${t.norte_hasta ? `; se mantiene hasta el ${fechaLarga(t.norte_hasta)}` : ""}.`
+    L.push(t.norte ? `• *Norte en el golfo de Tehuantepec:* viento máximo ${velKt(t.kt)} mar adentro${t.norte_hasta ? `; se mantiene hasta el ${fechaLarga(t.norte_hasta)}` : ""}.`
                    : "• Sin evento de Norte en el golfo de Tehuantepec.");
   }
   if (C && C.puertos) {
-    const v = []; C.puertos.puertos.forEach(pp => pp.ventanas.forEach(w => v.push(`${w.texto.replace("Posible cierre", "posible cierre")} en ${pp.nombre} del ${fechaLarga(w.desde)} al ${fechaLarga(w.hasta)} (hasta ${w.max_kt} kt)`)));
-    L.push(v.length ? `• *Puertos:* ${v.join("; ")}.` : "• *Puertos:* sin condiciones de cierre previstas en las próximas 72 h.");
+    const v = []; C.puertos.puertos.forEach(pp => pp.ventanas.forEach(w => v.push(`${w.texto.replace("Posible cierre", "posible cierre")} en ${pp.nombre} del ${fechaLarga(w.desde)} al ${fechaLarga(w.hasta)} (viento de hasta ${velKt(w.max_kt)})`)));
+    const prec = C.puertos.puertos.filter(pp => !pp.ventanas.length && pp.peor === "precaucion")
+      .map(pp => `${pp.nombre}, con viento de hasta ${velKt(pp.kt_max)}`);
+    if (v.length) L.push(`• *Puertos:* ${v.join("; ")}.`);
+    else L.push(`• *Puertos:* sin condiciones de cierre previstas en las próximas 72 h${prec.length ? `. Precaución en ${prec.join("; ")}` : ""}.`);
   }
   if (C && C.oleaje) {
     const o = C.oleaje, g = o.max72["Golfo de Tehuantepec (mar adentro)"], b = o.ahora["Salina Cruz (bocana)"];
     let t = "• *Oleaje:*";
-    if (g != null) t += ` golfo de Tehuantepec hasta ${g.toFixed(1)} m (${ft(g)} ft) mar adentro en las próximas 72 h;`;
-    if (b) t += ` bocana de Salina Cruz ${b.hs.toFixed(1)} m (${ft(b.hs)} ft) ahora.`;
-    L.push(t);
-    o.avisos.filter(x => x.tipo === "fondo").forEach(x => L.push(`• *${x.titulo}:* ${x.zona}, hasta ${x.altura}.`));
+    if (b) t += ` bocana de Salina Cruz ${ola(b.hs)} ahora;`;
+    if (g != null) t += ` golfo de Tehuantepec mar adentro hasta ${ola(g)} en las próximas 72 h.`;
+    L.push(t.replace(/;$/, "."));
+    o.avisos.forEach(x => L.push(`• *${x.titulo}:* ${x.zona}, hasta ${x.altura}, ${x.cuando ? "el " + x.cuando : "del " + x.desde + " al " + x.hasta}.`));
   }
   if (PZ && PZ.conteo) L.push(PZ.conteo.rojo ? `• *Presas:* ${PZ.conteo.rojo} en alerta: ${PZ.presas.filter(x => x.color === "rojo").map(x => `${x.nombre} ${x.pct}%`).join(", ")}.`
                                              : "• *Presas:* ninguna en alerta.");
