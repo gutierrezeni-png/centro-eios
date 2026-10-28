@@ -169,7 +169,14 @@ function pintarAhora(a, C) {
   chips.innerHTML = c.join("");
 }
 
-let SEMAR_NIVELES = {};
+let SEMAR_NIVELES = {}, OFICIAL = {};
+const COLOR_OFICIAL = { abierto:"var(--verde)", menores:"var(--naranja)", general:"var(--rojo)" };
+function lineaEstadoOficial(nombre) {
+  const o = OFICIAL[nombre];
+  if (!o) return "";
+  return `<div class="oficial"><b>Estado oficial (Capitanía):</b> <span class="pill" style="--c:${COLOR_OFICIAL[o.estado] || "#5A6B79"}">${esc(o.texto)}</span>
+    ${o.motivo ? esc(o.motivo) + " · " : ""}${o.actualizado ? "desde el " + esc(fechaLarga(o.actualizado)) : ""}</div>`;
+}
 function lineaOficial(nombre) {
   const n = SEMAR_NIVELES[nombre];
   if (!n) return "";
@@ -197,9 +204,9 @@ function pintarPuertos(P) {
     } else { txt = `Sin condiciones de cierre previstas. Viento máximo ${velKt(p.kt_max)}${p.hs_max != null ? ", olas de hasta " + ola(p.hs_max) : ""}.`; }
     const nivel = P.niveles[p.nivel_ahora];
     return `<div class="pto"><div class="nom">${esc(p.nombre)}<small>${esc(p.fuente)}</small></div>
-      <div><span class="pill" style="--c:${COLOR[p.nivel_ahora]}">Ahora: ${esc(nivel.texto)}</span>
+      <div><span class="pill" style="--c:${COLOR[p.nivel_ahora]}">Pronóstico para ahora: ${esc(nivel.texto)}</span>
       <div class="txt">Viento ${velKt(p.kt_ahora)}${p.beaufort_ahora != null ? " (Beaufort " + p.beaufort_ahora + ")" : ""}${p.hs_ahora != null ? " · olas " + ola(p.hs_ahora) : ""}${p.motivo_ahora ? " · por " + p.motivo_ahora : ""}</div>
-      <div class="barra">${segs}</div><div class="dias">${diasHtml}</div><div class="txt">${txt}</div>${lineaOficial(p.nombre)}</div></div>`;
+      <div class="barra">${segs}</div><div class="dias">${diasHtml}</div><div class="txt">${txt}</div>${lineaEstadoOficial(p.nombre)}${lineaOficial(p.nombre)}</div></div>`;
   }).join("");
 }
 
@@ -230,6 +237,11 @@ function construir(C, PZ, LL) {
                      titulo: `${v.texto}: ${p.nombre}`, det: `${v.motivo ? "Por " + v.motivo + ": v" : "V"}iento de hasta ${velKt(v.max_kt)}${v.max_hs ? ", olas de hasta " + ola(v.max_hs) : ""}.` });
     }));
   }
+  // --- estado oficial de los puertos (Capitanías)
+  if (C && C.oficial) C.oficial.puertos.filter(p => p.estado !== "abierto").forEach(p => {
+    avisos.unshift({ c: p.estado === "general" ? "var(--rojo)" : "var(--naranja)", t: `Puerto de ${p.puerto}: ${p.texto.toLowerCase()} (estado oficial)`,
+                     d: `${p.motivo ? p.motivo + ". " : ""}${p.actualizado ? "Desde el " + fechaLarga(p.actualizado) + "." : ""} Información de la Capitanía de Puerto.` });
+  });
   // --- pronóstico oficial SEMAR con condiciones de cierre
   if (C && C.semar && C.semar.niveles) {
     const porRegion = {};
@@ -338,13 +350,18 @@ function textoCompartir(a, C, PZ, LL) {
     L.push(t.norte ? `• *Norte en el golfo de Tehuantepec:* viento máximo de ${velKt(t.kt)} ${dondeNorte(t)}.${t.norte_hasta ? ` Se mantiene hasta el ${fechaLarga(t.norte_hasta)}.` : ""}`
                    : "• Sin evento de Norte en el golfo de Tehuantepec.");
   }
+  if (C && C.oficial) {
+    const cerr = C.oficial.puertos.filter(p => p.estado !== "abierto");
+    L.push(cerr.length ? `• *Estado oficial de los puertos:* ${cerr.map(p => `${p.puerto} ${p.texto.toLowerCase()}${p.motivo ? " (" + p.motivo.toLowerCase() + ")" : ""}`).join("; ")}; los demás puertos de la jurisdicción, abiertos.`
+                       : "• *Estado oficial de los puertos:* todos los puertos de la jurisdicción abiertos a la navegación.");
+  }
   if (C && C.puertos) {
     const v = []; C.puertos.puertos.forEach(pp => pp.ventanas.forEach(w => v.push(`${w.texto.replace("Posible cierre", "posible cierre")} en ${pp.nombre}${w.motivo ? " por " + w.motivo : ""}, del ${fechaLarga(w.desde)} al ${fechaLarga(w.hasta)} (viento de hasta ${velKt(w.max_kt)}${w.max_hs ? ", olas de hasta " + ola(w.max_hs) : ""})`)));
     // precaución solo cuando es significativa (viento Beaufort 5 o más, u olas de 1.5 m o más)
     const prec = C.puertos.puertos.filter(pp => !pp.ventanas.length && pp.peor === "precaucion" && (pp.kt_max >= 15.7 || (pp.hs_max ?? 0) >= 1.5))
       .map(pp => `${pp.nombre}, con viento de hasta ${velKt(pp.kt_max)}${pp.hs_max != null ? " y olas de hasta " + ola(pp.hs_max) : ""}`);
-    if (v.length) L.push(`• *Puertos:* ${v.join("; ")}.`);
-    else L.push(`• *Puertos:* sin condiciones de cierre previstas en las próximas 72 h${prec.length ? `. Precaución para embarcaciones menores en ${prec.join("; ")}` : ""}.`);
+    if (v.length) L.push(`• *Pronóstico de condiciones en los puertos:* ${v.join("; ")}.`);
+    else L.push(`• *Pronóstico de condiciones en los puertos:* sin condiciones de cierre previstas en las próximas 72 h${prec.length ? `. Precaución para embarcaciones menores en ${prec.join("; ")}` : ""}.`);
   }
   if (C && C.oleaje) {
     const o = C.oleaje, g = o.max72["Golfo de Tehuantepec (mar adentro)"], b = o.ahora["Salina Cruz (bocana)"];
@@ -386,10 +403,12 @@ async function cargar() {
   const hoy = partes(new Date().toISOString());
   document.getElementById("fechaHoy").textContent = `${hoy.weekday} ${hoy.day} de ${MESES[+hoy.month - 1]} de ${hoy.year} · actualizado a las ${hoy.hour}:${hoy.minute} h`;
   SEMAR_NIVELES = (C && C.semar && C.semar.niveles) || {};
+  OFICIAL = {}; ((C && C.oficial && C.oficial.puertos) || []).forEach(p => { OFICIAL[p.nombre_semaforo] = p; });
   pintarAhora(a, C); pintarPuertos(C && C.puertos); pintarSemar(C && C.semar); construir(C, PZ, LL);
   document.getElementById("texto").value = textoCompartir(a, C, PZ, LL);
   const f = [];
   if (C) f.push(`carta sinóptica, oleaje y puertos: GFS corrida ${fechaLarga(C.ciclo)}`);
+  if (C && C.oficial) f.push(`estado oficial de los puertos consultado el ${fechaLarga(C.oficial.consultado)}`);
   if (okP && typeof PRONOSTICO_GENERADO !== "undefined") f.push(`pronóstico local generado ${fechaLarga(PRONOSTICO_GENERADO)}`);
   if (PZ && PZ.fecha) f.push(`presas: boletín CONAGUA ${PZ.fecha}`);
   document.getElementById("fuentes").textContent = "Fuentes — " + (f.join(" · ") || "sin datos disponibles");
