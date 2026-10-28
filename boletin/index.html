@@ -66,7 +66,7 @@ La decisión de cerrar o abrir un puerto corresponde a la Capitanía de Puerto.<
 
 <div class="tarjeta"><h2>Texto para compartir</h2>
 <textarea id="texto" readonly></textarea>
-<div class="fila"><input id="revisado" placeholder="Revisado por (grado y nombre)">
+<div class="fila">
 <button class="boton wa" id="btnWa">Enviar por WhatsApp</button><button class="boton copiar" id="btnCopiar">Copiar</button></div>
 <p class="nota">El texto se arma solo con los datos más recientes. Revíselo antes de enviarlo.</p></div>
 
@@ -96,7 +96,18 @@ function ft(m) { return (m * 3.28084).toFixed(0); }
 // Unidades estándar del boletín: viento en km/h con su equivalencia en nudos; oleaje en metros con su equivalencia en pies
 function velKt(kt) { return kt == null || isNaN(kt) ? "—" : `${Math.round(kt * 1.852)} km/h (${Math.round(kt)} kt)`; }
 function velMs(ms) { return ms == null || isNaN(ms) ? "—" : velKt(ms * 1.943844); }
+// El punto "Golfo de Tehuantepec (mar adentro)" del oleaje está en 15°N 95°W, a unos 130 km al sur de Salina Cruz
+const ZONA_GOLFO = "Golfo de Tehuantepec (mar adentro)";
+function zonaTexto(z) { return String(z || "").replace(ZONA_GOLFO, "golfo de Tehuantepec, a unos 130 km al sur de Salina Cruz"); }
+function dondeNorte(t) {
+  if (t && t.dist_sc_km != null) {
+    const km = Math.max(10, Math.round(t.dist_sc_km / 10) * 10);
+    return `a unos ${km} km al ${t.rumbo_sc} de Salina Cruz, en mar abierto; cerca de la costa el viento es menor`;
+  }
+  return "lejos de la costa, en mar abierto; cerca de la costa el viento es menor";
+}
 function ola(m) { return m == null || isNaN(m) ? "—" : `${m.toFixed(1)} m (${ft(m)} ft)`; }
+function mayus(t) { return t ? t[0].toUpperCase() + t.slice(1) : t; }
 function esc(t) { return String(t).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
 
 async function json(url) { try { const r = await fetch(url + "?t=" + Date.now(), { cache:"no-store" }); return r.ok ? await r.json() : null; } catch (e) { return null; } }
@@ -189,20 +200,25 @@ function construir(C, PZ, LL) {
     const t = C.tehuantepec;
     const hasta = t.norte_hasta ? ` Se mantiene hasta el ${fechaLarga(t.norte_hasta)}.` : "";
     avisos.push({ c:"#B5722A", t:`Evento de Norte en el golfo de Tehuantepec (${t.categoria})`,
-                  d:`Viento máximo de ${velKt(t.kt)} mar adentro.${hasta}` });
+                  d:`Viento máximo de ${velKt(t.kt)} ${dondeNorte(t)}.${hasta}` });
     eventos.push({ t: new Date().toISOString(), c:"#B5722A", cuando: t.norte_hasta ? `Ahora → ${fechaLarga(t.norte_hasta)}` : "Ahora",
-                   titulo:"Norte en el golfo de Tehuantepec", det:`Viento de hasta ${velKt(t.kt_max_72h ?? t.kt)} mar adentro. Presión: golfo de México ${t.p_golfo} hPa, golfo de Tehuantepec ${t.p_pacifico} hPa (diferencia ${t.dp > 0 ? "+" : ""}${t.dp} hPa).` });
+                   titulo:"Norte en el golfo de Tehuantepec", det:`Viento de hasta ${velKt(t.kt_max_72h ?? t.kt)} ${dondeNorte(t)}. Presión: golfo de México ${t.p_golfo} hPa, golfo de Tehuantepec ${t.p_pacifico} hPa (diferencia ${t.dp > 0 ? "+" : ""}${t.dp} hPa).` });
   }
   // --- oleaje
   if (C && C.oleaje) {
     C.oleaje.avisos.forEach(a => {
       const cuando = a.cuando ? `El ${a.cuando}` : `Del ${a.desde} al ${a.hasta}`;
       avisos.push({ c: a.tipo === "fondo" ? "#2A7FB5" : a.tipo === "alto" ? "var(--rojo)" : "#B5722A", t: a.titulo,
-                    d: `${a.zona}: hasta ${a.altura}. ${cuando}.`, n: a.significado });
+                    d: `${mayus(zonaTexto(a.zona))}: hasta ${a.altura}. ${cuando}.`, n: a.significado });
       eventos.push({ t: null, orden: 1, c: a.tipo === "fondo" ? "#2A7FB5" : "#B5722A", cuando: a.cuando || `${a.desde} → ${a.hasta}`,
-                     titulo: a.titulo, det: `${a.zona}: hasta ${a.altura}.` });
+                     titulo: a.titulo, det: `${mayus(zonaTexto(a.zona))}: hasta ${a.altura}.` });
     });
   }
+  // --- humedad
+  if (C && C.humedad) agruparHumedad(C.humedad).forEach(g => {
+    eventos.push({ t: g.desde_iso, c:"#2A8F6B", cuando:`${fechaLarga(g.desde_iso)} → ${fechaLarga(g.hasta_iso)}`,
+                   titulo:`Afluencia de humedad del ${g.origen}: ${g.capas}`, det:`Sobre ${g.zonaTxt}. Humedad relativa promedio de ${g.hr} %. Favorece nublados y lluvias.` });
+  });
   // --- presas
   if (PZ && PZ.conteo && PZ.conteo.rojo) {
     const nombres = PZ.presas.filter(p => p.color === "rojo").map(p => `${p.nombre} (${p.pct}%)`).join(", ");
@@ -229,6 +245,36 @@ function construir(C, PZ, LL) {
   return { avisos, eventos };
 }
 
+// Junta los periodos de humedad de una misma zona y origen (bajos, medios y altos en una sola línea)
+function agruparHumedad(lista) {
+  const g = {};
+  lista.forEach(e => {
+    const k = e.zona + "|" + e.origen;
+    if (!g[k]) g[k] = { zona: e.zona, origen: e.origen, capas: [], desde_iso: e.desde, hasta_iso: e.hasta, hr: [] };
+    const x = g[k];
+    if (!x.capas.includes(e.capa)) x.capas.push(e.capa);
+    if (e.desde < x.desde_iso) x.desde_iso = e.desde;
+    if (e.hasta > x.hasta_iso) x.hasta_iso = e.hasta;
+    x.hr.push(e.hr_prom);
+  });
+  const orden = ["niveles bajos", "niveles medios", "niveles altos"];
+  return Object.values(g).map(x => {
+    const capas = orden.filter(c => x.capas.includes(c));
+    const txt = capas.length > 1 ? capas.slice(0, -1).join(", ").replace(/niveles /g, "") + " y " + capas.at(-1).replace("niveles ", "") : capas[0];
+    return { ...x, capas: capas.length > 1 ? "niveles " + txt : txt, hr: Math.round(x.hr.reduce((a, b) => a + b, 0) / x.hr.length) };
+  }).map(x => ({ ...x, zonaTxt: x.zona.startsWith("Istmo") ? "el istmo y golfo de Tehuantepec"
+                   : x.zona.includes("incluido") ? "la jurisdicción de Guerrero a Chiapas, incluido el istmo y golfo de Tehuantepec"
+                   : "la jurisdicción de Guerrero a Chiapas" }))
+    .reduce((acc, x) => {   // si toda la jurisdicción tiene lo mismo que el istmo, se dice una sola vez
+      const par = acc.find(y => y.origen === x.origen && y.capas === x.capas && y.zona !== x.zona);
+      if (par) { par.zona = "Jurisdicción"; par.zonaTxt = "la jurisdicción de Guerrero a Chiapas, incluido el istmo y golfo de Tehuantepec";
+                 par.desde_iso = par.desde_iso < x.desde_iso ? par.desde_iso : x.desde_iso;
+                 par.hasta_iso = par.hasta_iso > x.hasta_iso ? par.hasta_iso : x.hasta_iso; par.hr = Math.round((par.hr + x.hr) / 2); }
+      else acc.push(x);
+      return acc; }, [])
+    .sort((a, b) => (a.zona.startsWith("Istmo") ? 0 : 1) - (b.zona.startsWith("Istmo") ? 0 : 1));
+}
+
 function textoCompartir(a, C, PZ, LL) {
   const L = [], ahora = new Date().toISOString(), p = partes(ahora);
   L.push("*E.I.O. Salina Cruz — Boletín del día*");
@@ -237,7 +283,7 @@ function textoCompartir(a, C, PZ, LL) {
   if (a) L.push(`• *Salina Cruz ahora:* ${a.temp_c} °C, viento ${cardinal(a.viento_dir_deg)} ${velMs(a.viento_ms)}, racha ${velMs(a.racha_ms)}, humedad ${a.humedad_pct} %, presión ${a.presion_hpa} hPa.`);
   if (C && C.tehuantepec) {
     const t = C.tehuantepec;
-    L.push(t.norte ? `• *Norte en el golfo de Tehuantepec:* viento máximo ${velKt(t.kt)} mar adentro${t.norte_hasta ? `; se mantiene hasta el ${fechaLarga(t.norte_hasta)}` : ""}.`
+    L.push(t.norte ? `• *Norte en el golfo de Tehuantepec:* viento máximo de ${velKt(t.kt)} ${dondeNorte(t)}.${t.norte_hasta ? ` Se mantiene hasta el ${fechaLarga(t.norte_hasta)}.` : ""}`
                    : "• Sin evento de Norte en el golfo de Tehuantepec.");
   }
   if (C && C.puertos) {
@@ -251,9 +297,14 @@ function textoCompartir(a, C, PZ, LL) {
     const o = C.oleaje, g = o.max72["Golfo de Tehuantepec (mar adentro)"], b = o.ahora["Salina Cruz (bocana)"];
     let t = "• *Oleaje:*";
     if (b) t += ` bocana de Salina Cruz ${ola(b.hs)} ahora;`;
-    if (g != null) t += ` golfo de Tehuantepec mar adentro hasta ${ola(g)} en las próximas 72 h.`;
+    if (g != null) t += ` en el golfo de Tehuantepec, a unos 130 km al sur de Salina Cruz, hasta ${ola(g)} en las próximas 72 h.`;
     L.push(t.replace(/;$/, "."));
-    o.avisos.forEach(x => L.push(`• *${x.titulo}:* ${x.zona}, hasta ${x.altura}, ${x.cuando ? "el " + x.cuando : "del " + x.desde + " al " + x.hasta}.`));
+    o.avisos.forEach(x => L.push(`• *${x.titulo}:* ${zonaTexto(x.zona)}, hasta ${x.altura}, ${x.cuando ? "el " + x.cuando : "del " + x.desde + " al " + x.hasta}.`));
+  }
+  if (C && C.humedad !== undefined) {
+    const gs = agruparHumedad(C.humedad || []);
+    if (gs.length) gs.forEach(g => L.push(`• *Humedad:* afluencia del ${g.origen} en ${g.capas} sobre ${g.zonaTxt}, del ${fechaLarga(g.desde_iso)} al ${fechaLarga(g.hasta_iso)} (humedad relativa promedio de ${g.hr} %); favorece nublados y lluvias.`));
+    else L.push("• *Humedad:* sin afluencia significativa de humedad (60 % o más durante 24 h) en las próximas 72 h.");
   }
   if (PZ && PZ.conteo) L.push(PZ.conteo.rojo ? `• *Presas:* ${PZ.conteo.rojo} en alerta: ${PZ.presas.filter(x => x.color === "rojo").map(x => `${x.nombre} ${x.pct}%`).join(", ")}.`
                                              : "• *Presas:* ninguna en alerta.");
@@ -261,8 +312,6 @@ function textoCompartir(a, C, PZ, LL) {
   if (C && C.sistemas) C.sistemas.filter(s => /Tormenta|Huracán|Depresión|Ciclón/.test(s.nombre))
     .forEach(s => L.push(`• *${s.nombre}:* ${s.donde} ${s.relevante ? "Vigilar su evolución." : "Sin efecto directo previsto en la jurisdicción."}`));
   L.push("");
-  const rev = document.getElementById("revisado").value.trim();
-  if (rev) L.push(`Revisado por: ${rev}`);
   L.push("Pronóstico preliminar automático. Más información: " + CENTRO);
   return L.join("\n");
 }
@@ -285,10 +334,6 @@ async function cargar() {
   if (PZ && PZ.fecha) f.push(`presas: boletín CONAGUA ${PZ.fecha}`);
   document.getElementById("fuentes").textContent = "Fuentes — " + (f.join(" · ") || "sin datos disponibles");
 }
-const inpRev = document.getElementById("revisado");
-try { inpRev.value = localStorage.getItem("boletin_revisado") || ""; } catch (e) {}
-inpRev.addEventListener("input", () => { try { localStorage.setItem("boletin_revisado", inpRev.value); } catch (e) {}
-  document.getElementById("texto").value = textoCompartir(ESTADO.a, ESTADO.C, ESTADO.PZ, ESTADO.LL); });
 document.getElementById("btnWa").addEventListener("click", () =>
   window.open("https://wa.me/?text=" + encodeURIComponent(document.getElementById("texto").value), "_blank"));
 document.getElementById("btnCopiar").addEventListener("click", async () => {
