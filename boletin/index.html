@@ -43,11 +43,6 @@ textarea { width:100%; min-height:260px; border:1px solid var(--linea); border-r
 .wa { background:#25A162; color:#fff; } .copiar { background:var(--panel); color:var(--texto); border:1px solid var(--linea); }
 .nota { color:var(--tenue); font-size:.78rem; }
 .cargando { color:var(--tenue); font-style:italic; }
-.piloto { font-size:.72rem; font-weight:700; vertical-align:middle; background:#E8A33D; color:#15212C; border-radius:6px; padding:2px 8px; margin-left:6px; }
-.desact { background:color-mix(in srgb, var(--rojo) 12%, transparent); border:1px solid var(--rojo); border-left:6px solid var(--rojo);
-          border-radius:8px; padding:10px 12px; margin-bottom:12px; color:var(--texto); }
-.desact b { color:var(--rojo); }
-.pie { color:var(--tenue); font-size:.8rem; border-top:1px solid var(--linea); padding-top:10px; margin-top:6px; }
 table.of { border-collapse:collapse; width:100%; font-size:.86rem; }
 table.of th, table.of td { border-bottom:1px solid var(--linea); padding:6px 8px; text-align:left; vertical-align:top; }
 table.of th { color:var(--tenue); font-weight:600; }
@@ -55,9 +50,8 @@ table.of th { color:var(--tenue); font-weight:600; }
 .tabla { overflow-x:auto; }
 @media (max-width:560px) { .pto { grid-template-columns:1fr; } body { padding:8px; } }
 </style></head><body>
-<h1>Boletín del día <span class="piloto">Versión piloto</span></h1>
+<h1>Boletín del día</h1>
 <p class="sub" id="fechaHoy">—</p>
-<div id="desactualizado" class="desact" hidden></div>
 
 <div id="avisos"></div>
 
@@ -84,8 +78,6 @@ corresponde al Capitán de Puerto.</p></div>
 <p class="nota">El texto se arma solo con los datos más recientes. Revíselo antes de enviarlo.</p></div>
 
 <p class="nota" id="fuentes"></p>
-<p class="pie">Versión piloto. Producto de apoyo de la E.I.O. Salina Cruz, generado automáticamente; para avisos oficiales consulte
-los productos de la Secretaría de Marina y del Servicio Meteorológico Nacional.</p>
 
 <script>
 const BASE = location.origin + "/";
@@ -213,23 +205,6 @@ function pintarPuertos(P) {
       <div class="txt">Viento ${velKt(p.kt_ahora)}${p.beaufort_ahora != null ? " (Beaufort " + p.beaufort_ahora + ")" : ""}${p.hs_ahora != null ? " · olas " + ola(p.hs_ahora) : ""}${p.motivo_ahora ? " · por " + p.motivo_ahora : ""}</div>
       <div class="barra">${segs}</div><div class="dias">${diasHtml}</div><div class="txt">${txt}</div>${lineaEstadoOficial(p.nombre)}${lineaOficial(p.nombre)}</div></div>`;
   }).join("");
-}
-
-// Aviso de información desactualizada (por ejemplo, si el equipo que la genera se detuvo)
-function revisarVigencia(C, PZ, LL) {
-  const ahora = Date.now(), h = 3600e3, viejos = [];
-  const edad = iso => iso ? (ahora - new Date(iso)) : Infinity;
-  if (!C) viejos.push("la carta sinóptica, el oleaje y el semáforo de puertos (no disponibles)");
-  else if (edad(C.generado) > 12 * h) viejos.push(`la carta sinóptica, el oleaje y el semáforo de puertos (desde el ${fechaLarga(C.generado)})`);
-  if (C && C.oficial && edad(C.oficial.consultado) > 6 * h) viejos.push(`el estado oficial de los puertos (consultado el ${fechaLarga(C.oficial.consultado)})`);
-  if (typeof PRONOSTICO_GENERADO !== "undefined" && edad(PRONOSTICO_GENERADO) > 12 * h) viejos.push(`el pronóstico local (desde el ${fechaLarga(PRONOSTICO_GENERADO)})`);
-  if (PZ && PZ.generado && edad(PZ.generado) > 48 * h) viejos.push(`el nivel de las presas (desde el ${fechaLarga(PZ.generado)})`);
-  if (LL && LL.generado && edad(LL.generado) > 24 * h) viejos.push(`la lluvia pronosticada (desde el ${fechaLarga(LL.generado)})`);
-  const caja = document.getElementById("desactualizado");
-  caja.hidden = !viejos.length;
-  if (viejos.length) caja.innerHTML = `<b>Información desactualizada.</b> No se han actualizado: ${viejos.map(esc).join("; ")}.
-    Tome esos datos solo como referencia.`;
-  return viejos;
 }
 
 function construir(C, PZ, LL) {
@@ -402,7 +377,7 @@ function textoCompartir(a, C, PZ, LL) {
   if (C && C.sistemas) C.sistemas.filter(s => /Tormenta|Huracán|Depresión|Ciclón/.test(s.nombre))
     .forEach(s => L.push(`• *${s.nombre}:* ${s.donde} ${s.relevante ? "Vigilar su evolución." : "Sin efecto directo previsto en la jurisdicción."}`));
   L.push("");
-  L.push("Versión piloto — pronóstico preliminar automático. Más información: " + CENTRO);
+  L.push("Pronóstico preliminar automático. Más información: " + CENTRO);
   return L.join("\n");
 }
 
@@ -419,11 +394,9 @@ async function cargar() {
   SEMAR_NIVELES = (C && C.semar && C.semar.niveles) || {};
   OFICIAL = {}; ((C && C.oficial && C.oficial.puertos) || []).forEach(p => { OFICIAL[p.nombre_semaforo] = p; });
   pintarAhora(a, C); pintarPuertos(C && C.puertos); construir(C, PZ, LL);
-  const viejos = revisarVigencia(C, PZ, LL);
-  document.getElementById("texto").value = textoCompartir(a, C, PZ, LL) +
-    (viejos.length ? "\n\nNota: parte de la información no se ha actualizado recientemente; verifique antes de difundir." : "");
+  document.getElementById("texto").value = textoCompartir(a, C, PZ, LL);
   const f = [];
-  if (C) f.push(`carta sinóptica, oleaje y puertos: GFS corrida ${fechaLarga(C.ciclo)}${C.origen === "nube" ? " (generado por el respaldo automático)" : ""}`);
+  if (C) f.push(`carta sinóptica, oleaje y puertos: GFS corrida ${fechaLarga(C.ciclo)}`);
   if (C && C.oficial) f.push(`estado oficial de los puertos consultado el ${fechaLarga(C.oficial.consultado)}`);
   if (okP && typeof PRONOSTICO_GENERADO !== "undefined") f.push(`pronóstico local generado ${fechaLarga(PRONOSTICO_GENERADO)}`);
   if (PZ && PZ.fecha) f.push(`presas: boletín CONAGUA ${PZ.fecha}`);
