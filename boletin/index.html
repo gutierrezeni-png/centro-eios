@@ -65,9 +65,12 @@ table.of th { color:var(--tenue); font-weight:600; }
 <span><i style="background:var(--ambar)"></i>Precaución para embarcaciones menores: viento de 20 a 38 km/h (11 a 21 kt) u olas de 1.5 a 2 m (5 a 7 ft)</span>
 <span><i style="background:var(--naranja)"></i>Posible cierre parcial a embarcaciones menores: viento de 39 a 61 km/h (21 a 33 kt) u olas de 2 a 4 m (7 a 13 ft)</span>
 <span><i style="background:var(--rojo)"></i>Posible cierre a todo tipo de embarcaciones: viento de 62 km/h (33.5 kt) o más u olas de 4 m (13 ft) o más</span></div>
-<p class="nota">Pronóstico de condiciones con base en el viento sostenido (GFS) y la altura del oleaje (GFS-Wave) frente a cada
-puerto. Manda la condición más severa entre viento y oleaje. La decisión de cerrar o abrir un puerto
+<p class="nota">Pronóstico de condiciones con base en el viento sostenido (GFS) y la altura del oleaje (GFS-Wave) en el punto de referencia de cada
+puerto; en Salina Cruz, la zona de fondeo. Manda la condición más severa entre viento y oleaje. La decisión de cerrar o abrir un puerto
 corresponde al Capitán de Puerto.</p></div>
+
+<div class="tarjeta" id="tarjetaSemar" hidden><h2>Pronóstico meteorológico marino oficial (SEMAR)</h2>
+<div id="semar"></div></div>
 
 <div class="tarjeta"><h2>Eventos significativos</h2><ul class="tl" id="tl"><li class="cargando">Cargando…</li></ul></div>
 
@@ -207,6 +210,22 @@ function pintarPuertos(P) {
   }).join("");
 }
 
+function pintarSemar(S) {
+  const t = document.getElementById("tarjetaSemar");
+  if (!S) { t.hidden = true; return; }
+  t.hidden = false;
+  const viejo = S.emision && (Date.now() - new Date(S.emision + "-06:00")) > 36 * 3600e3;
+  const fila = r => `<tr><td><b>${esc(r.nombre)}</b></td><td>${esc(r.h24.viento_txt)}<br>Olas: ${esc(r.h24.olas_txt)}</td>
+    <td>${esc(r.h48.viento_txt)}<br>Olas: ${esc(r.h48.olas_txt)}</td></tr>`;
+  const regiones = [...Object.values(S.costa), ...Object.values(S.fuera)];
+  document.getElementById("semar").innerHTML =
+    `<p class="nota">Emitido el ${S.emision ? esc(fechaLarga(S.emision + "-06:00")) : "—"}${S.vigencia_hasta ? ", válido hasta el " + esc(fechaLarga(S.vigencia_hasta + "-06:00")) : ""}.
+     ${viejo ? '<b style="color:var(--rojo)">Este pronóstico tiene más de 36 horas; puede no estar vigente.</b>' : ""}</p>` +
+    (S.avisos.length ? `<div class="aviso" style="--c:var(--naranja)"><b>Aviso de temporal</b>${S.avisos.map(a => `<div style="margin-top:4px">${esc(a)}</div>`).join("")}</div>` : "") +
+    `<div class="tabla"><table class="of"><tr><th>Región</th><th>Próximas 24 h</th><th>De 24 a 48 h</th></tr>${regiones.map(fila).join("")}</table></div>
+     <p class="nota">Zona costera: de la línea de costa a 24 millas náuticas. Mar afuera: de 24 a 200 millas náuticas.</p>`;
+}
+
 function construir(C, PZ, LL) {
   const avisos = [], eventos = [], lineas = [];
   // --- puertos
@@ -223,16 +242,8 @@ function construir(C, PZ, LL) {
     avisos.unshift({ c: p.estado === "general" ? "var(--rojo)" : "var(--naranja)", t: `Puerto de ${p.puerto}: ${p.texto.toLowerCase()} (estado oficial)`,
                      d: `${p.motivo ? p.motivo + ". " : ""}${p.actualizado ? "Desde el " + fechaLarga(p.actualizado) + "." : ""} Información de la Capitanía de Puerto.` });
   });
-  // --- Aviso de temporal del pronóstico oficial de SEMAR
-  if (C && C.semar && C.semar.avisos && C.semar.avisos.length) {
-    const S = C.semar;
-    const viejo = S.emision && (Date.now() - new Date(S.emision + "-06:00")) > 36 * 3600e3;
-    if (!viejo) avisos.push({ c: "var(--naranja)", t: "Aviso de temporal (pronóstico meteorológico marino oficial, SEMAR)",
-      d: S.avisos.join(" "), n: `Emitido el ${S.emision ? fechaLarga(S.emision + "-06:00") : "—"}${S.vigencia_hasta ? ", válido hasta el " + fechaLarga(S.vigencia_hasta + "-06:00") : ""}.` });
-  }
   // --- pronóstico oficial SEMAR con condiciones de cierre
-  const semarVigente = C && C.semar && !(C.semar.emision && (Date.now() - new Date(C.semar.emision + "-06:00")) > 36 * 3600e3);
-  if (semarVigente && C.semar.niveles) {
+  if (C && C.semar && C.semar.niveles) {
     const porRegion = {};
     Object.entries(C.semar.niveles).forEach(([puerto, n]) => ["h24", "h48"].forEach(h => {
       if (ORDEN[n[h].nivel] >= 2) {
@@ -393,7 +404,7 @@ async function cargar() {
   document.getElementById("fechaHoy").textContent = `${hoy.weekday} ${hoy.day} de ${MESES[+hoy.month - 1]} de ${hoy.year} · actualizado a las ${hoy.hour}:${hoy.minute} h`;
   SEMAR_NIVELES = (C && C.semar && C.semar.niveles) || {};
   OFICIAL = {}; ((C && C.oficial && C.oficial.puertos) || []).forEach(p => { OFICIAL[p.nombre_semaforo] = p; });
-  pintarAhora(a, C); pintarPuertos(C && C.puertos); construir(C, PZ, LL);
+  pintarAhora(a, C); pintarPuertos(C && C.puertos); pintarSemar(C && C.semar); construir(C, PZ, LL);
   document.getElementById("texto").value = textoCompartir(a, C, PZ, LL);
   const f = [];
   if (C) f.push(`carta sinóptica, oleaje y puertos: GFS corrida ${fechaLarga(C.ciclo)}`);
