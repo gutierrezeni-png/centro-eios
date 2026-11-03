@@ -75,6 +75,7 @@ nav.menu .detalle { font-size: .76rem; opacity: .68; }
 [data-app="mapas"] { --acento: var(--mapas); }
 [data-app="carta"] { --acento: var(--carta); }
 [data-app="boletin"] { --acento: var(--boletin); }
+[data-app="sugerencias"] { --acento: #2A9D96; }
 .pie { margin-top: auto; padding: 14px 16px 16px; border-top: 1px solid rgba(255,255,255,.12);
   display: flex; flex-direction: column; gap: 10px; }
 .reloj { font: 600 1.5rem/1 "Barlow Condensed", sans-serif; }
@@ -85,6 +86,12 @@ nav.menu .detalle { font-size: .76rem; opacity: .68; }
   font: 600 .9rem "Barlow", sans-serif; cursor: pointer;
 }
 .boton.instalar { background: #E8A33D; color: #15212C; }
+.visitas { font-size: .76rem; opacity: .75; margin-top: 8px; }
+.sug { flex: 1; overflow: auto; background: #fff; border-radius: 10px; padding: 18px 20px; color: #15212C; }
+.sug h3 { margin: 0 0 6px; font-size: 1.15rem; }
+.sug p { margin: 0 0 10px; line-height: 1.45; color: #3B4B58; }
+.sug iframe { width: 100%; min-height: 1150px; border: 0; }
+.sug .pendiente { border: 1px dashed #B8C4CC; border-radius: 8px; padding: 14px; color: #5A6B79; }
 
 /* ---------- área de la app ---------- */
 main { min-height: 0; display: flex; flex-direction: column; padding: 12px; }
@@ -188,6 +195,11 @@ button:focus-visible, a:focus-visible { outline: 3px solid var(--enfoque); outli
       <span class="nombre">Carta<span class="largo"> sinóptica</span></span>
       <span class="detalle">Sistemas y Tehuantepecer</span>
     </button>
+    <button type="button" data-app="sugerencias">
+      <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v11H9l-5 4z"/><path d="M8 9h8M8 12.5h5"/></svg></span>
+      <span class="nombre">Comentarios</span>
+      <span class="detalle">Observaciones y sugerencias</span>
+    </button>
   </nav>
 
   <div class="pie">
@@ -196,6 +208,7 @@ button:focus-visible, a:focus-visible { outline: 3px solid var(--enfoque); outli
       <button type="button" id="instalar" class="boton instalar" hidden>Instalar app</button>
       <button type="button" id="compartir" class="boton">Compartir</button>
     </div>
+    <div class="visitas" id="visitas" hidden></div>
   </div>
 </aside>
 
@@ -249,9 +262,25 @@ button:focus-visible, a:focus-visible { outline: 3px solid var(--enfoque); outli
     </div>
     <iframe title="Carta sinóptica" data-src="https://gutierrezeni-png.github.io/centro-eios/carta/"></iframe>
   </section>
+  <section class="app" data-app="sugerencias" aria-label="Observaciones y sugerencias">
+    <div class="cabeza">
+      <div><h2>Observaciones y sugerencias</h2><p>Su opinión nos ayuda a mejorar esta versión piloto</p></div>
+    </div>
+    <div class="sug">
+      <h3>¿Qué le parece la app?</h3>
+      <p>Esta es una versión piloto. Cuéntenos qué le resulta útil, qué no se entiende, qué datos no coinciden con lo que
+      usted observa o qué le gustaría que tuviera. Sus comentarios llegan directamente a la E.I.O. Salina Cruz.</p>
+      <div id="formulario"></div>
+    </div>
+  </section>
 </main>
 
 <script>
+// ---- Configuración de comentarios y visitas ----
+// Dirección del Formulario de Google (botón Enviar > ícono <> "Insertar HTML" > la dirección que aparece en src="...").
+const FORMULARIO = "";
+// Código de GoatCounter (por ejemplo "pronostico-eios" si su página es pronostico-eios.goatcounter.com).
+const GOATCOUNTER = "";
 const RECARGA_MIN = 15;   // la app a la vista se recarga sola cada 15 minutos
 const apps = [...document.querySelectorAll(".app")];
 const botones = [...document.querySelectorAll("nav.menu button")];
@@ -264,7 +293,8 @@ function horaLocal(d) {
 }
 
 function cargar(app) {
-  const marco = app.querySelector("iframe");
+  const marco = app.querySelector("iframe[data-src]");
+  if (!marco) return;   // secciones propias (observaciones y sugerencias)
   const url = marco.dataset.src;
   marco.src = url + (url.includes("?") ? "&" : "?") + "t=" + Date.now();  // evita copias viejas
   cargadaEn[app.dataset.app] = Date.now();
@@ -279,17 +309,56 @@ function mostrar(nombre) {
   const vieja = !cargadaEn[app.dataset.app] || Date.now() - cargadaEn[app.dataset.app] > RECARGA_MIN * 60000;
   if (vieja) cargar(app);
   guardar("centro_app", app.dataset.app);
+  contarVisita(app.dataset.app);
   if (location.hash !== "#" + app.dataset.app) history.replaceState(null, "", "#" + app.dataset.app);
 }
 
 apps.forEach(app => {
-  app.querySelector(".abrir").href = app.querySelector("iframe").dataset.src;
+  const marco = app.querySelector("iframe[data-src]");
+  if (!marco) return;
+  app.querySelector(".abrir").href = marco.dataset.src;
   app.querySelector(".recargar").addEventListener("click", () => cargar(app));
 });
 botones.forEach(b => b.addEventListener("click", () => mostrar(b.dataset.app)));
 window.addEventListener("hashchange", () => mostrar(location.hash.slice(1)));
 setInterval(() => { const a = apps.find(x => x.classList.contains("activa")); if (a) cargar(a); },
             RECARGA_MIN * 60 * 1000);
+
+// ---- Observaciones y sugerencias ----
+(function () {
+  const caja = document.getElementById("formulario");
+  if (FORMULARIO) {
+    const f = document.createElement("iframe");
+    f.title = "Formulario de observaciones y sugerencias";
+    f.src = FORMULARIO + (FORMULARIO.includes("?") ? "&" : "?") + "embedded=true";
+    f.loading = "lazy";
+    caja.appendChild(f);
+  }
+})();
+
+// ---- Contador de visitas (GoatCounter: sin cookies, no identifica a las personas) ----
+const contadas = new Set();
+function contarVisita(nombre) {
+  if (!GOATCOUNTER || contadas.has(nombre)) return;   // cada apartado cuenta una vez por visita
+  contadas.add(nombre);
+  const enviar = () => window.goatcounter && window.goatcounter.count &&
+    window.goatcounter.count({ path: "/" + nombre, title: nombre, event: false });
+  if (window.goatcounter && window.goatcounter.count) enviar(); else setTimeout(enviar, 1500);
+}
+if (GOATCOUNTER) {
+  window.goatcounter = { no_onload: true };
+  const sc = document.createElement("script");
+  sc.async = true; sc.src = "https://gc.zgo.at/count.js";
+  sc.dataset.goatcounter = "https://" + GOATCOUNTER + ".goatcounter.com/count";
+  sc.onload = () => { window.goatcounter.count({ path: "/inicio", title: "Apertura de la app" }); };
+  document.head.appendChild(sc);
+  // Total de aperturas de la app, para mostrarlo en el menú
+  fetch("https://" + GOATCOUNTER + ".goatcounter.com/counter/" + encodeURIComponent("/inicio") + ".json")
+    .then(r => r.ok ? r.json() : null)
+    .then(d => { if (d && d.count) { const v = document.getElementById("visitas");
+                   v.textContent = "Visitas: " + d.count; v.hidden = false; } })
+    .catch(() => {});
+}
 
 // Al abrir: la app del enlace (#carta, #presas…) o la última que se consultó
 mostrar(location.hash.slice(1) || "boletin");
