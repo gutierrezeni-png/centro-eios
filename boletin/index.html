@@ -71,6 +71,7 @@ table.of th { color:var(--tenue); font-weight:600; }
 <span><i style="background:var(--ambar)"></i>Precaución para embarcaciones menores: viento de 20 a 38 km/h (11 a 21 kt) u olas de 1.5 a 2 m (5 a 7 ft)</span>
 <span><i style="background:var(--naranja)"></i>Posible cierre parcial a embarcaciones menores: viento de 39 a 61 km/h (21 a 33 kt) u olas de 2 a 4 m (7 a 13 ft)</span>
 <span><i style="background:var(--rojo)"></i>Posible cierre a todo tipo de embarcaciones: viento de 62 km/h (33.5 kt) o más u olas de 4 m (13 ft) o más</span></div>
+<p class="nota" id="semarFecha"></p>
 <p class="nota">Pronóstico de condiciones con base en el viento sostenido (GFS) y la altura del oleaje (GFS-Wave) frente a cada
 puerto. Manda la condición más severa entre viento y oleaje. La decisión de cerrar o abrir un puerto
 corresponde al Capitán de Puerto.</p></div>
@@ -244,7 +245,7 @@ function construir(C, PZ, LL) {
     }));
   }
   // --- estado oficial de los puertos (Capitanías)
-  if (C && C.oficial) C.oficial.puertos.filter(p => p.estado !== "abierto").forEach(p => {
+  if (C && C.oficial) C.oficial.puertos.filter(p => p.estado === "menores" || p.estado === "general").forEach(p => {
     avisos.unshift({ c: p.estado === "general" ? "var(--rojo)" : "var(--naranja)", t: `Puerto de ${p.puerto}: ${p.texto.toLowerCase()} (estado oficial)`,
                      d: `${p.motivo ? p.motivo + ". " : ""}${p.actualizado ? "Desde el " + fechaLarga(p.actualizado) + "." : ""} Información de la Capitanía de Puerto.` });
   });
@@ -365,9 +366,10 @@ function textoCompartir(a, C, PZ, LL) {
                    : "• Sin evento de Norte en el golfo de Tehuantepec.");
   }
   if (C && C.oficial) {
-    const cerr = C.oficial.puertos.filter(p => p.estado !== "abierto");
-    L.push(cerr.length ? `• *Estado oficial de los puertos:* ${cerr.map(p => `${p.puerto} ${p.texto.toLowerCase()}${p.motivo ? " (" + p.motivo.toLowerCase() + ")" : ""}`).join("; ")}; los demás puertos de la jurisdicción, abiertos.`
-                       : "• *Estado oficial de los puertos:* todos los puertos de la jurisdicción abiertos a la navegación.");
+    const cerr = C.oficial.puertos.filter(p => p.estado === "menores" || p.estado === "general");
+    const sinDato = C.oficial.puertos.filter(p => p.estado === "sin_dato").map(p => p.puerto);
+    L.push(cerr.length ? `• *Estado oficial de los puertos:* ${cerr.map(p => `${p.puerto} ${p.texto.toLowerCase()}${p.motivo ? " (" + p.motivo.toLowerCase() + ")" : ""}`).join("; ")}; los demás puertos de la jurisdicción, abiertos${sinDato.length ? " (sin información reciente: " + sinDato.join(", ") + ")" : ""}.`
+                       : `• *Estado oficial de los puertos:* ${sinDato.length ? "puertos de la jurisdicción abiertos a la navegación, excepto " + sinDato.join(", ") + " (sin información reciente de la Capitanía)" : "todos los puertos de la jurisdicción abiertos a la navegación"}.`);
   }
   if (C && C.puertos) {
     const v = []; C.puertos.puertos.forEach(pp => pp.ventanas.forEach(w => v.push(`${w.texto.replace("Posible cierre", "posible cierre")} en ${pp.nombre}${w.motivo ? " por " + w.motivo : ""}, del ${fechaLarga(w.desde)} al ${fechaLarga(w.hasta)} (viento de hasta ${velKt(w.max_kt)}${w.max_hs ? ", olas de hasta " + ola(w.max_hs) : ""})`)));
@@ -422,8 +424,16 @@ async function cargar() {
   const viejos = revisarVigencia(C, PZ, LL);
   document.getElementById("texto").value = textoCompartir(a, C, PZ, LL) +
     (viejos.length ? "\n\nNota: parte de la información no se ha actualizado recientemente; verifique antes de difundir." : "");
+  // fecha de la última actualización del pronóstico oficial de SEMAR
+  const sf = document.getElementById("semarFecha");
+  if (C && C.semar && C.semar.emision) {
+    const viejo = (Date.now() - new Date(C.semar.emision + "-06:00")) > 36 * 3600e3;
+    sf.innerHTML = `<b>Pronóstico oficial SEMAR:</b> última actualización el ${esc(fechaLarga(C.semar.emision + "-06:00"))}` +
+      (viejo ? " · sin actualizar en más de 36 h, no se toma en cuenta en los avisos." : ".");
+  } else sf.innerHTML = "<b>Pronóstico oficial SEMAR:</b> no disponible.";
   const f = [];
   if (C) f.push(`carta sinóptica, oleaje y puertos: GFS corrida ${fechaLarga(C.ciclo)}${C.origen === "nube" ? " (generado por el respaldo automático)" : ""}`);
+  if (C && C.semar && C.semar.emision) f.push(`pronóstico oficial SEMAR emitido el ${fechaLarga(C.semar.emision + "-06:00")}`);
   if (C && C.oficial) f.push(`estado oficial de los puertos consultado el ${fechaLarga(C.oficial.consultado)}`);
   if (okP && typeof PRONOSTICO_GENERADO !== "undefined") f.push(`pronóstico local generado ${fechaLarga(PRONOSTICO_GENERADO)}`);
   if (PZ && PZ.fecha) f.push(`presas: boletín CONAGUA ${PZ.fecha}`);
